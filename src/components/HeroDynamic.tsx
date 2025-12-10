@@ -20,11 +20,12 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
       'entradas': 'entrada.png',
       'platillos': 'platillos.png',
       'shawarmas': 'shawarmas.png',
+      'promociones': 'shawarmas.png', // Usa la misma imagen de shawarmas
       'bebestibles': 'bebestibles.png',
       'postres': 'postre.png',
-      'acompañamientos': 'salsas-acom.png',
+      'acompañamientos': 'salsas-acomp.png',
       'menu-del-dia': 'menu-del-dia.png',
-      'menu-fin-de-ano': 'menu-fin-ano-2pers.png',
+      'menu-fin-de-ano': 'menu-fin-ano-8.png',
       'sandwich': 'sandwich.png',
       'desayunos': 'desayuno.png',
       'desayuno': 'desayuno.png',
@@ -40,8 +41,13 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
       let imagePath: string;
       if (category.slug === 'sandwich' || category.slug === 'desayunos' || category.slug === 'desayuno') {
         imagePath = `/${imageName}`;
+      } else if (category.slug === 'menu-del-dia') {
+        // menu-del-dia tiene punto en la carpeta, no guión
+        imagePath = `/menu-del.dia/${imageName}`;
+      } else if (category.slug === 'promociones') {
+        // promociones usa la imagen de shawarmas
+        imagePath = `/shawarmas/${imageName}`;
       } else {
-        // Intentar primero con el nombre mapeado, luego con el slug
         imagePath = `/${category.slug}/${imageName}`;
       }
       categoryImages.push(imagePath);

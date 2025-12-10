@@ -10,11 +10,12 @@ export default function CategoryHero({ categoryName, categorySlug, categoryImage
     'entradas': 'entrada.png',
     'platillos': 'platillos.png',
     'shawarmas': 'shawarmas.png',
+    'promociones': 'shawarmas.png', // Usa la misma imagen de shawarmas
     'bebestibles': 'bebestibles.png',
     'postres': 'postre.png',
-    'acompañamientos': 'salsas-acom.png',
+    'acompañamientos': 'salsas-acomp.png',
     'menu-del-dia': 'menu-del-dia.png',
-    'menu-fin-de-ano': 'menu-fin-ano-2pers.png',
+    'menu-fin-de-ano': 'menu-fin-ano-8.png',
     'sandwich': 'sandwich.png',
     'desayunos': 'desayuno.png',
     'desayuno': 'desayuno.png',
@@ -29,6 +30,12 @@ export default function CategoryHero({ categoryName, categorySlug, categoryImage
     // Si la imagen está en la raíz de public, no incluir la carpeta
     if (categorySlug === 'sandwich' || categorySlug === 'desayunos' || categorySlug === 'desayuno') {
       imagePath = `/${imageName}`;
+    } else if (categorySlug === 'menu-del-dia') {
+      // menu-del-dia tiene punto en la carpeta, no guión
+      imagePath = `/menu-del.dia/${imageName}`;
+    } else if (categorySlug === 'promociones') {
+      // promociones usa la imagen de shawarmas
+      imagePath = `/shawarmas/${imageName}`;
     } else {
       imagePath = `/${categorySlug}/${imageName}`;
     }
