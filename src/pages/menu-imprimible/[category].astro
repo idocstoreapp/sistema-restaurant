@@ -1,0 +1,18 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import MenuImprimible from '../../react/components/MenuImprimible';
+import type { APIContext } from 'astro';
+
+export async function getStaticPaths() {
+  // Esto se generará dinámicamente, pero por ahora retornamos vacío
+  // Astro generará las rutas en build time si hay datos
+  return [];
+}
+
+const { category } = Astro.params;
+---
+
+<PublicLayout title="Menú Imprimible">
+  <MenuImprimible categorySlug={category} client:load />
+</PublicLayout>
+

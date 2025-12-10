@@ -1,0 +1,468 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="Menú Gourmet Árabe" />
+    <title>{title} | Gourmet Árabe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-gradient-to-br from-arabic-dark via-arabic-brown to-terracotta-700 min-h-screen">
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  html {
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Bordes dorados elegantes */
+  .border-gold-elegant {
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    position: relative;
+    box-shadow: 
+      0 0 10px rgba(212, 175, 55, 0.2),
+      inset 0 0 10px rgba(212, 175, 55, 0.1);
+  }
+
+  .border-gold-elegant:hover {
+    border-color: rgba(212, 175, 55, 0.9);
+    box-shadow: 
+      0 0 20px rgba(212, 175, 55, 0.4),
+      inset 0 0 15px rgba(212, 175, 55, 0.2);
+  }
+
+  /* Animación de imagen con zoom y movimiento */
+  @keyframes imageSequence {
+    /* 0-10%: Imagen normal */
+    0%, 10% {
+      transform: scale(1) translateX(0);
+    }
+    /* 10%: Flash a mitad del viewport (50%) → zoom instantáneo y cercano AL MISMO TIEMPO */
+    10.1%, 12% {
+      transform: scale(1.6) translateX(0);
+    }
+    /* 12-53%: Movimiento ULTRA FLUIDO sin pausas - fotogramas cada 0.5% para máxima fluidez */
+    12% {
+      transform: scale(1.6) translateX(0);
+    }
+    12.5% {
+      transform: scale(1.6) translateX(-0.5%);
+    }
+    13% {
+      transform: scale(1.6) translateX(-1%);
+    }
+    13.5% {
+      transform: scale(1.6) translateX(-1.5%);
+    }
+    14% {
+      transform: scale(1.6) translateX(-2%);
+    }
+    14.5% {
+      transform: scale(1.6) translateX(-2.5%);
+    }
+    15% {
+      transform: scale(1.6) translateX(-3%);
+    }
+    15.5% {
+      transform: scale(1.6) translateX(-3.5%);
+    }
+    16% {
+      transform: scale(1.6) translateX(-4%);
+    }
+    16.5% {
+      transform: scale(1.6) translateX(-4.5%);
+    }
+    17% {
+      transform: scale(1.6) translateX(-5%);
+    }
+    17.5% {
+      transform: scale(1.6) translateX(-5.5%);
+    }
+    18% {
+      transform: scale(1.6) translateX(-6%);
+    }
+    18.5% {
+      transform: scale(1.6) translateX(-6.5%);
+    }
+    19% {
+      transform: scale(1.6) translateX(-7%);
+    }
+    19.5% {
+      transform: scale(1.6) translateX(-7.5%);
+    }
+    20% {
+      transform: scale(1.6) translateX(-8%);
+    }
+    20.5% {
+      transform: scale(1.6) translateX(-8.5%);
+    }
+    21% {
+      transform: scale(1.6) translateX(-9%);
+    }
+    21.5% {
+      transform: scale(1.6) translateX(-9.5%);
+    }
+    22% {
+      transform: scale(1.6) translateX(-10%);
+    }
+    /* Luego volver gradualmente al centro y luego a +10% */
+    22.5% {
+      transform: scale(1.6) translateX(-9.5%);
+    }
+    23% {
+      transform: scale(1.6) translateX(-9%);
+    }
+    23.5% {
+      transform: scale(1.6) translateX(-8.5%);
+    }
+    24% {
+      transform: scale(1.6) translateX(-8%);
+    }
+    24.5% {
+      transform: scale(1.6) translateX(-7.5%);
+    }
+    25% {
+      transform: scale(1.6) translateX(-7%);
+    }
+    25.5% {
+      transform: scale(1.6) translateX(-6.5%);
+    }
+    26% {
+      transform: scale(1.6) translateX(-6%);
+    }
+    26.5% {
+      transform: scale(1.6) translateX(-5.5%);
+    }
+    27% {
+      transform: scale(1.6) translateX(-5%);
+    }
+    27.5% {
+      transform: scale(1.6) translateX(-4.5%);
+    }
+    28% {
+      transform: scale(1.6) translateX(-4%);
+    }
+    28.5% {
+      transform: scale(1.6) translateX(-3.5%);
+    }
+    29% {
+      transform: scale(1.6) translateX(-3%);
+    }
+    29.5% {
+      transform: scale(1.6) translateX(-2.5%);
+    }
+    30% {
+      transform: scale(1.6) translateX(-2%);
+    }
+    30.5% {
+      transform: scale(1.6) translateX(-1.5%);
+    }
+    31% {
+      transform: scale(1.6) translateX(-1%);
+    }
+    31.5% {
+      transform: scale(1.6) translateX(-0.5%);
+    }
+    32% {
+      transform: scale(1.6) translateX(0);
+    }
+    32.5% {
+      transform: scale(1.6) translateX(0.5%);
+    }
+    33% {
+      transform: scale(1.6) translateX(1%);
+    }
+    33.5% {
+      transform: scale(1.6) translateX(1.5%);
+    }
+    34% {
+      transform: scale(1.6) translateX(2%);
+    }
+    34.5% {
+      transform: scale(1.6) translateX(2.5%);
+    }
+    35% {
+      transform: scale(1.6) translateX(3%);
+    }
+    35.5% {
+      transform: scale(1.6) translateX(3.5%);
+    }
+    36% {
+      transform: scale(1.6) translateX(4%);
+    }
+    36.5% {
+      transform: scale(1.6) translateX(4.5%);
+    }
+    37% {
+      transform: scale(1.6) translateX(5%);
+    }
+    37.5% {
+      transform: scale(1.6) translateX(5.5%);
+    }
+    38% {
+      transform: scale(1.6) translateX(6%);
+    }
+    38.5% {
+      transform: scale(1.6) translateX(6.5%);
+    }
+    39% {
+      transform: scale(1.6) translateX(7%);
+    }
+    39.5% {
+      transform: scale(1.6) translateX(7.5%);
+    }
+    40% {
+      transform: scale(1.6) translateX(8%);
+    }
+    40.5% {
+      transform: scale(1.6) translateX(8.5%);
+    }
+    41% {
+      transform: scale(1.6) translateX(9%);
+    }
+    41.5% {
+      transform: scale(1.6) translateX(9.5%);
+    }
+    42% {
+      transform: scale(1.6) translateX(10%);
+    }
+    42.5% {
+      transform: scale(1.6) translateX(9.5%);
+    }
+    43% {
+      transform: scale(1.6) translateX(9%);
+    }
+    43.5% {
+      transform: scale(1.6) translateX(8.5%);
+    }
+    44% {
+      transform: scale(1.6) translateX(8%);
+    }
+    44.5% {
+      transform: scale(1.6) translateX(7.5%);
+    }
+    45% {
+      transform: scale(1.6) translateX(7%);
+    }
+    45.5% {
+      transform: scale(1.6) translateX(6.5%);
+    }
+    46% {
+      transform: scale(1.6) translateX(6%);
+    }
+    46.5% {
+      transform: scale(1.6) translateX(5.5%);
+    }
+    47% {
+      transform: scale(1.6) translateX(5%);
+    }
+    47.5% {
+      transform: scale(1.6) translateX(4.5%);
+    }
+    48% {
+      transform: scale(1.6) translateX(4%);
+    }
+    48.5% {
+      transform: scale(1.6) translateX(3.5%);
+    }
+    49% {
+      transform: scale(1.6) translateX(3%);
+    }
+    49.5% {
+      transform: scale(1.6) translateX(2.5%);
+    }
+    50% {
+      transform: scale(1.6) translateX(2%);
+    }
+    50.5% {
+      transform: scale(1.6) translateX(1.5%);
+    }
+    51% {
+      transform: scale(1.6) translateX(1%);
+    }
+    51.5% {
+      transform: scale(1.6) translateX(0.5%);
+    }
+    52% {
+      transform: scale(1.6) translateX(0);
+    }
+    53% {
+      transform: scale(1.6) translateX(0);
+    }
+    54%, 96% {
+      transform: scale(1.6) translateX(0);
+    }
+    /* 99%: Flash sincronizado → vuelve a normal AL MISMO TIEMPO */
+    99.1%, 100% {
+      transform: scale(1) translateX(0);
+    }
+  }
+
+  .menu-image-container img,
+  .menu-image-container video {
+    animation: imageSequence 12s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    will-change: transform;
+  }
+
+  /* Animación del Flash */
+  @keyframes flashReflection {
+    /* 0-9%: Sin flash, fuera del viewport */
+    0%, 9% {
+      left: -200%;
+      top: -200%;
+      opacity: 0;
+    }
+    /* 9-10%: Flash rápido cruza hasta llegar al 50% del viewport (mitad) - SINCRONIZADO con zoom a 1.6x */
+    9% {
+      left: -200%;
+      top: -200%;
+      opacity: 0;
+    }
+    9.5% {
+      left: -150%;
+      top: -150%;
+      opacity: 0.6;
+    }
+    10% {
+      /* Flash al 50% del viewport (mitad) - EXACTAMENTE cuando cambia el zoom a 1.6x */
+      left: -50%;
+      top: -50%;
+      opacity: 1;
+    }
+    10.5% {
+      left: 50%;
+      top: 50%;
+      opacity: 0.6;
+    }
+    11%, 98% {
+      /* Flash sale rápidamente del viewport */
+      left: 200%;
+      top: 200%;
+      opacity: 0;
+    }
+    /* 98-99%: Flash cruza de nuevo - SINCRONIZADO con cambio a tamaño normal */
+    98% {
+      left: -200%;
+      top: -200%;
+      opacity: 0;
+    }
+    98.5% {
+      left: -150%;
+      top: -150%;
+      opacity: 0.6;
+    }
+    99% {
+      /* Flash al 50% del viewport (mitad) - EXACTAMENTE cuando vuelve a tamaño normal */
+      left: -50%;
+      top: -50%;
+      opacity: 1;
+    }
+    99.5% {
+      left: 50%;
+      top: 50%;
+      opacity: 0.6;
+    }
+    99.9%, 100% {
+      left: 200%;
+      top: 200%;
+      opacity: 0;
+    }
+  }
+
+  .flash-overlay {
+    animation: flashReflection 12s ease-in-out infinite;
+  }
+</style>
+
+<script is:inline>
+  // Asignar delays aleatorios a cada card para desincronizar animaciones
+  function assignRandomDelays() {
+    const containers = document.querySelectorAll('.menu-image-container:not([data-delay-assigned])');
+    
+    containers.forEach((container) => {
+      // Marcar como procesado para evitar procesarlo múltiples veces
+      container.setAttribute('data-delay-assigned', 'true');
+      
+      // Generar delay aleatorio entre 0 y 12 segundos
+      const randomDelay = Math.random() * 12;
+      // Duración aleatoria entre 12 y 15 segundos
+      const randomDuration = 12 + Math.random() * 3;
+      
+      // Aplicar a la imagen o video
+      const media = container.querySelector('img, video');
+      if (media) {
+        media.style.animationDelay = randomDelay + 's';
+        media.style.animationDuration = randomDuration + 's';
+      }
+      
+      // Crear elemento flash real si no existe - DEBE TENER EXACTAMENTE EL MISMO DELAY Y DURACIÓN
+      let flashElement = container.querySelector('.flash-overlay');
+      if (!flashElement) {
+        flashElement = document.createElement('div');
+        flashElement.className = 'flash-overlay';
+        flashElement.style.cssText = `
+          position: absolute;
+          top: -50%;
+          left: -200%;
+          width: 200%;
+          height: 200%;
+          pointer-events: none;
+          z-index: 10;
+          background: linear-gradient(135deg, transparent 0%, transparent 25%, rgba(255, 255, 255, 0.6) 42%, rgba(255, 255, 255, 0.9) 48%, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, 0.9) 52%, rgba(255, 255, 255, 0.6) 58%, transparent 75%, transparent 100%);
+          transform: rotate(-45deg);
+          transform-origin: center center;
+          animation: flashReflection ${randomDuration}s ease-in-out infinite;
+          animation-delay: ${randomDelay}s;
+          opacity: 0;
+        `;
+        container.appendChild(flashElement);
+      } else {
+        // Si ya existe, actualizar con los mismos valores
+        flashElement.style.animationDelay = randomDelay + 's';
+        flashElement.style.animationDuration = randomDuration + 's';
+        flashElement.style.animation = 'flashReflection ' + randomDuration + 's ease-in-out infinite';
+        // Asegurar que esté oculto inicialmente
+        flashElement.style.opacity = '0';
+        flashElement.style.left = '-200%';
+        flashElement.style.top = '-200%';
+      }
+    });
+  }
+
+  // Ejecutar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', assignRandomDelays);
+  } else {
+    assignRandomDelays();
+  }
+
+  // También ejecutar después de delays para capturar elementos cargados dinámicamente
+  setTimeout(assignRandomDelays, 100);
+  setTimeout(assignRandomDelays, 500);
+  setTimeout(assignRandomDelays, 1000);
+  setTimeout(assignRandomDelays, 2000);
+
+  // Observar cambios en el DOM para elementos que se carguen después
+  const observer = new MutationObserver(() => {
+    assignRandomDelays();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+</script>
+

@@ -1,0 +1,16 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import OrdenForm from '../../../react/components/OrdenForm';
+import type { APIContext } from 'astro';
+
+export async function getStaticPaths() {
+  return [];
+}
+
+const { id } = Astro.params;
+---
+
+<AdminLayout title="Orden">
+  <OrdenForm ordenId={id!} client:load />
+</AdminLayout>
+

@@ -1,0 +1,206 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import HalalInfo from '../components/HalalInfo';
+import NavigationMenu from '../components/NavigationMenu';
+import CategoryHero from '../components/CategoryHero';
+import Footer from '../components/Footer.astro';
+import { supabase } from '../lib/supabase';
+
+const { category: categorySlug } = Astro.params;
+
+// Verificar configuración
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+const isConfigured = !!(supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co');
+
+let category: any = null;
+let items: any[] = [];
+let allCategories: any[] = [];
+let heroImages: string[] = [];
+
+if (isConfigured) {
+  try {
+    // Obtener la categoría por slug
+    const { data: cat, error: catError } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('slug', categorySlug)
+      .eq('is_active', true)
+      .single();
+
+    if (catError || !cat) {
+      return Astro.redirect('/');
+    }
+
+    category = cat;
+
+    // Obtener items de esta categoría
+    const { data: itemsData, error: itemsError } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('category_id', category.id)
+      .eq('is_available', true)
+      .order('order_num', { ascending: true });
+
+    if (!itemsError && itemsData) {
+      items = itemsData;
+      
+      // Obtener imágenes destacadas de esta categoría para el hero slider
+      const itemsWithImages = itemsData
+        .filter((item: any) => item.image_url)
+        .sort((a: any, b: any) => {
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          return 0;
+        })
+        .slice(0, 5)
+        .map((item: any) => item.image_url);
+      
+      heroImages = itemsWithImages;
+    }
+
+    // Obtener todas las categorías para navegación
+    const { data: cats, error: catsError } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_num', { ascending: true });
+
+    if (!catsError && cats) {
+      allCategories = cats;
+    }
+  } catch (error: any) {
+    console.error('Error cargando datos:', error?.message || error);
+    return Astro.redirect('/');
+  }
+} else {
+  return Astro.redirect('/');
+}
+
+const formatPrice = (price: number) => {
+  if (price === 0) return 'Consultar';
+  return '$' + new Intl.NumberFormat('es-CL').format(price);
+};
+
+const hasMeat = (itemName: string, description: string = '') => {
+  const meatKeywords = ['carne', 'pollo', 'kebab', 'kebbab', 'mixto', 'vacuno', 'halal'];
+  const text = `${itemName} ${description}`.toLowerCase();
+  return meatKeywords.some(keyword => text.includes(keyword));
+};
+---
+
+<PublicLayout title={`${category.name} - Gourmet Árabe`}>
+  <NavigationMenu client:load categories={allCategories} currentSlug={categorySlug} />
+  
+  <div class="min-h-screen bg-[#0a0a0a] relative">
+    <div class="absolute inset-0 opacity-10 z-0" style="background-image: url('/fondo.png'); background-size: cover; background-position: center;"></div>
+    
+    <div class="relative z-10">
+      <!-- Hero de la categoría con imagen -->
+      <CategoryHero 
+        client:load 
+        categoryName={category.name}
+        categorySlug={category.slug}
+        categoryImage={category.image_url}
+      />
+
+      <!-- Grid de productos -->
+      <div class="px-4 pb-12">
+        <div class="max-w-6xl mx-auto">
+          {items && items.length > 0 ? (
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {items.map((item) => (
+                <div class="menu-card group">
+                  <div class="relative border-gold-elegant rounded-lg overflow-hidden bg-black/70 backdrop-blur-sm transition-all duration-300">
+                    
+                    {item.image_url && (
+                      <div class="relative h-48 overflow-hidden menu-image-container">
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name}
+                          class="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {item.is_featured && (
+                          <div class="absolute top-3 right-3 bg-gold-500 text-black px-2 py-1 rounded text-xs font-bold z-20">
+                            ⭐ DESTACADO
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div class="p-4">
+                      <div class="flex justify-between items-start gap-4">
+                        <div class="flex-1">
+                          <div class="flex items-center gap-2 mb-1">
+                            <h3 class="font-cinzel text-gold-400 text-lg font-bold leading-tight">
+                              {item.name.toUpperCase()}
+                            </h3>
+                            {hasMeat(item.name, item.description) && (
+                              <span 
+                                class="inline-flex items-center gap-1 bg-gold-600/20 text-gold-400 px-2 py-0.5 rounded text-xs font-semibold border border-gold-600/50"
+                                title="Preparado con carne halal certificada"
+                              >
+                                🕌 HALAL
+                              </span>
+                            )}
+                            {!item.image_url && item.is_featured && (
+                              <span class="text-sm">⭐</span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p class="text-gold-200/70 text-sm leading-relaxed">{item.description}</p>
+                          )}
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                          <span class="font-cinzel text-gold-400 text-xl font-bold">
+                            {formatPrice(item.price)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div class="text-center py-16">
+              <div class="border-2 border-gold-600/50 rounded-lg p-8 bg-black/50 max-w-md mx-auto">
+                <p class="text-gold-400 text-xl mb-4">No hay items disponibles</p>
+                <a href="/" class="text-gold-300 hover:text-gold-400 underline">Volver al inicio</a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  </div>
+
+  <HalalInfo client:load />
+</PublicLayout>
+
+<style>
+  .menu-card {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+  
+  .menu-card:nth-child(1) { animation-delay: 0.1s; }
+  .menu-card:nth-child(2) { animation-delay: 0.15s; }
+  .menu-card:nth-child(3) { animation-delay: 0.2s; }
+  .menu-card:nth-child(4) { animation-delay: 0.25s; }
+  .menu-card:nth-child(5) { animation-delay: 0.3s; }
+  .menu-card:nth-child(6) { animation-delay: 0.35s; }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

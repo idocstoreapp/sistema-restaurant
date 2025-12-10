@@ -1,0 +1,13 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import Login from '../../react/Login';
+---
+
+<AdminLayout title="Iniciar Sesión">
+  <div class="min-h-screen flex items-center justify-center bg-slate-50">
+    <div class="max-w-md w-full">
+      <Login client:load />
+    </div>
+  </div>
+</AdminLayout>
+
