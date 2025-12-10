@@ -1,3 +1,6 @@
+// Helper para verificar si estamos en el cliente
+const isClient = typeof window !== 'undefined';
+
 interface CategoryHeroProps {
   categoryName: string;
   categorySlug: string;
@@ -14,8 +17,9 @@ export default function CategoryHero({ categoryName, categorySlug, categoryImage
     'bebestibles': 'bebestibles.png',
     'postres': 'postre.png',
     'acompañamientos': 'salsas-acomp.png',
+    'acompanamientos': 'salsas-acomp.png', // Variante sin tilde
     'menu-del-dia': 'menu-del-dia.png',
-    'menu-fin-de-ano': 'menu-fin-ano-8.png',
+    'menu-fin-de-ano': 'menu-fin-ano.png',
     'sandwich': 'sandwich.png',
     'desayunos': 'desayuno.png',
     'desayuno': 'desayuno.png',
@@ -23,21 +27,39 @@ export default function CategoryHero({ categoryName, categorySlug, categoryImage
 
   // Intentar obtener la imagen de la categoría
   let imagePath: string;
-  if (categoryImage) {
+  
+  // Normalizar el slug para comparación
+  const normalizedSlug = categorySlug?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
+  const isAcompanamientos = normalizedSlug === 'acompanamientos' || 
+                            categorySlug?.toLowerCase().includes('acompa') ||
+                            categoryName?.toLowerCase().includes('acompañamiento') ||
+                            categoryName?.toLowerCase().includes('acompanamiento');
+  
+  // Si hay categoryImage de la BD, usarlo solo si no es acompañamientos (forzar nuestra imagen)
+  if (categoryImage && !isAcompanamientos) {
     imagePath = categoryImage;
   } else {
-    const imageName = imageMap[categorySlug] || `${categorySlug}.png`;
-    // Si la imagen está en la raíz de public, no incluir la carpeta
-    if (categorySlug === 'sandwich' || categorySlug === 'desayunos' || categorySlug === 'desayuno') {
-      imagePath = `/${imageName}`;
-    } else if (categorySlug === 'menu-del-dia') {
-      // menu-del-dia tiene punto en la carpeta, no guión
-      imagePath = `/menu-del.dia/${imageName}`;
-    } else if (categorySlug === 'promociones') {
-      // promociones usa la imagen de shawarmas
-      imagePath = `/shawarmas/${imageName}`;
+    // Forzar ruta para acompañamientos
+    if (isAcompanamientos) {
+      imagePath = '/acompañamientos/salsas-acomp.png';
     } else {
-      imagePath = `/${categorySlug}/${imageName}`;
+      const imageName = imageMap[categorySlug] || imageMap[normalizedSlug] || `${categorySlug}.png`;
+      
+      // Si la imagen está en la raíz de public, no incluir la carpeta
+      if (categorySlug === 'sandwich' || categorySlug === 'desayunos' || categorySlug === 'desayuno') {
+        imagePath = `/${imageName}`;
+      } else if (categorySlug === 'menu-del-dia') {
+        // menu-del-dia tiene punto en la carpeta, no guión
+        imagePath = `/menu-del.dia/${imageName}`;
+      } else if (categorySlug === 'promociones') {
+        // promociones usa la imagen de shawarmas
+        imagePath = `/shawarmas/shawarmas.png`;
+      } else if (categorySlug === 'shawarmas' || categorySlug === 'shawarma' || normalizedSlug === 'shawarmas') {
+        // shawarmas usa su propia imagen
+        imagePath = `/shawarmas/shawarmas.png`;
+      } else {
+        imagePath = `/${categorySlug}/${imageName}`;
+      }
     }
   }
 
@@ -58,24 +80,81 @@ export default function CategoryHero({ categoryName, categorySlug, categoryImage
                   alt={categoryName}
                   className="relative w-full h-full object-contain drop-shadow-[0_0_20px_rgba(212,175,55,0.5)] animate-float"
                   loading="eager"
+                  onLoad={(e) => {
+                    // Debug solo en desarrollo (cliente)
+                    if (isClient && window.location.hostname === 'localhost') {
+                      console.log('✅ CategoryHero - Image loaded:', {
+                        src: (e.target as HTMLImageElement).src,
+                        categorySlug,
+                        categoryName,
+                        isAcompanamientos,
+                      });
+                    }
+                  }}
                   onError={(e) => {
-                    // Intentar rutas alternativas
+                    // Intentar rutas alternativas según la categoría
                     const img = e.target as HTMLImageElement;
                     const currentSrc = img.src;
-                    const baseUrl = currentSrc.split('/').slice(0, -1).join('/');
-                    const altPaths = [
-                      `${baseUrl}/${categorySlug}.png`,
-                      `/${categorySlug}.png`,
-                      `/${categorySlug}/${categorySlug}.png`,
-                    ];
+                    let altPaths: string[] = [];
+                    
+                    if (isClient && window.location.hostname === 'localhost') {
+                      console.error('❌ CategoryHero - Image failed to load:', {
+                        failedSrc: currentSrc,
+                        categorySlug,
+                        categoryName,
+                        isAcompanamientos,
+                      });
+                    }
+                    
+                    // Rutas específicas por categoría
+                    if (categorySlug === 'shawarmas' || categorySlug === 'shawarma') {
+                      altPaths = [
+                        '/shawarmas/shawarmas.png',
+                        '/shawarmas.png',
+                      ];
+                    } else if (categorySlug === 'acompañamientos' || categorySlug === 'acompanamientos' || isAcompanamientos) {
+                      altPaths = [
+                        '/acompañamientos/salsas-acomp.png',
+                        '/acompañamientos/salsas-acom.png',
+                        '/salsas-acomp.png',
+                        // Intentar también con diferentes codificaciones
+                        encodeURI('/acompañamientos/salsas-acomp.png'),
+                      ];
+                      if (isClient && window.location.hostname === 'localhost') {
+                        console.log('🔄 CategoryHero - Trying alternative paths for acompañamientos:', altPaths);
+                      }
+                    } else if (categorySlug === 'menu-del-dia') {
+                      altPaths = [
+                        '/menu-del.dia/menu-del-dia.png',
+                        '/menu-del-dia.png',
+                      ];
+                    } else if (categorySlug === 'promociones') {
+                      altPaths = [
+                        '/shawarmas/shawarmas.png',
+                        '/shawarmas.png',
+                      ];
+                    } else {
+                      const baseUrl = currentSrc.split('/').slice(0, -1).join('/');
+                      altPaths = [
+                        `${baseUrl}/${categorySlug}.png`,
+                        `/${categorySlug}.png`,
+                        `/${categorySlug}/${categorySlug}.png`,
+                      ];
+                    }
                     
                     let attemptIndex = 0;
                     const tryNext = () => {
                       if (attemptIndex < altPaths.length) {
+                        if (isClient && window.location.hostname === 'localhost') {
+                          console.log(`🔄 CategoryHero - Trying path ${attemptIndex + 1}/${altPaths.length}:`, altPaths[attemptIndex]);
+                        }
                         img.src = altPaths[attemptIndex];
                         attemptIndex++;
                       } else {
                         // Si todas fallan, hacer la imagen semi-transparente en lugar de ocultarla
+                        if (isClient && window.location.hostname === 'localhost') {
+                          console.error('❌ CategoryHero - All paths failed, setting opacity to 0.3');
+                        }
                         img.style.opacity = '0.3';
                       }
                     };

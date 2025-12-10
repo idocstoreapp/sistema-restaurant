@@ -116,11 +116,17 @@ export default function MenuImprimibleCompleto() {
       {categories.map((category) => {
         const items = categoriesData.get(category.id) || [];
         const isPlatillos = category.slug === 'platillos';
-        // Para platillos, usar menos items por página para evitar desbordes
-        const itemsPerPage = isPlatillos ? 10 : 15;
+        // Para platillos, calcular items por página para que quepa en exactamente 2 páginas
+        let itemsPerPage = isPlatillos ? 15 : 15;
+        const maxPages = isPlatillos ? 2 : 1;
+        
+        // Si es platillos y hay más items de los que caben en 2 páginas, ajustar itemsPerPage
+        if (isPlatillos && items.length > 0) {
+          // Calcular cuántos items deben ir por página para que quepan en 2 páginas
+          itemsPerPage = Math.ceil(items.length / maxPages);
+        }
+        
         const needsMultiplePages = isPlatillos && items.length > itemsPerPage;
-        // Para platillos, máximo 3 páginas
-        const maxPages = isPlatillos ? 3 : 1;
         const pages = needsMultiplePages 
           ? Math.min(Math.ceil(items.length / itemsPerPage), maxPages)
           : 1;
@@ -254,7 +260,7 @@ export default function MenuImprimibleCompleto() {
                 rgba(184, 134, 11, 0.05) 15px,
                 rgba(184, 134, 11, 0.05) 30px
               ) !important;
-            padding: 25px 20px;
+            padding: 15px 18px;
             color: white !important;
             font-family: 'Cinzel', 'Playfair Display', serif;
             page-break-after: always;
@@ -287,13 +293,13 @@ export default function MenuImprimibleCompleto() {
 
           .menu-header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             position: relative;
             flex-shrink: 0;
           }
 
           .menu-title {
-            font-size: 28px !important;
+            font-size: 32px !important;
             font-weight: 700 !important;
             color: #d4af37 !important;
             text-shadow: 
@@ -309,7 +315,7 @@ export default function MenuImprimibleCompleto() {
           }
 
           .menu-imprimible.platillos .menu-title {
-            font-size: 30px !important;
+            font-size: 34px !important;
           }
 
           .menu-title .page-number {
@@ -348,7 +354,7 @@ export default function MenuImprimibleCompleto() {
           .menu-image-container {
             width: 100%;
             max-width: 100%;
-            margin: 12px auto;
+            margin: 8px auto;
             border: 2.5px solid #d4af37 !important;
             border-radius: 8px;
             overflow: hidden;
@@ -378,21 +384,21 @@ export default function MenuImprimibleCompleto() {
             height: auto;
             display: block;
             object-fit: cover;
-            max-height: 180px;
+            max-height: 220px;
           }
 
           .menu-imprimible.platillos .menu-image {
-            max-height: 200px;
+            max-height: 240px;
           }
 
           .menu-imprimible.continuation .menu-image {
-            max-height: 170px;
+            max-height: 220px;
           }
 
           .menu-items-list {
             max-width: 100%;
-            margin: 10px auto 0;
-            padding: 0 12px;
+            margin: 8px auto 0;
+            padding: 0 8px;
             flex: 1;
             overflow: hidden;
             display: flex;
@@ -402,14 +408,15 @@ export default function MenuImprimibleCompleto() {
 
           .menu-imprimible.platillos .menu-items-list {
             max-width: 100%;
-            margin: 12px auto 0;
+            margin: 8px auto 0;
+            padding: 0 8px;
           }
 
           .menu-item-row {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            padding: 5px 0;
+            padding: 6px 0;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             page-break-inside: avoid;
             position: relative;
@@ -441,17 +448,17 @@ export default function MenuImprimibleCompleto() {
           }
 
           .menu-item-name {
-            font-size: 13px !important;
+            font-size: 15px !important;
             font-weight: 600 !important;
             color: #ffffff !important;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
             font-family: 'Playfair Display', serif !important;
-            line-height: 1.3;
+            line-height: 1.4;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
           }
 
           .menu-imprimible.platillos .menu-item-name {
-            font-size: 14px !important;
+            font-size: 15px !important;
             margin-bottom: 3px;
           }
 
@@ -464,22 +471,23 @@ export default function MenuImprimibleCompleto() {
           }
 
           .menu-imprimible.platillos .menu-item-description {
-            font-size: 11px;
-            line-height: 1.4;
+            font-size: 10px;
+            line-height: 1.3;
+            margin-top: 2px;
           }
 
           .menu-item-price {
-            font-size: 11px !important;
+            font-size: 13px !important;
             font-weight: 700 !important;
             color: #d4af37 !important;
             border: 1.5px solid #d4af37 !important;
-            padding: 3px 8px !important;
+            padding: 4px 10px !important;
             border-radius: 4px;
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)) !important;
             white-space: nowrap;
             font-family: 'Cinzel', serif !important;
             text-align: center;
-            min-width: 60px;
+            min-width: 70px;
             box-shadow: 
               0 2px 6px rgba(212, 175, 55, 0.4),
               inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
@@ -487,9 +495,9 @@ export default function MenuImprimibleCompleto() {
           }
 
           .menu-imprimible.platillos .menu-item-price {
-            font-size: 12px !important;
-            padding: 4px 9px !important;
-            min-width: 65px;
+            font-size: 13px !important;
+            padding: 4px 10px !important;
+            min-width: 70px;
           }
         }
 

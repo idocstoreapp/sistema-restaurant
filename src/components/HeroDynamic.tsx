@@ -25,7 +25,7 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
       'postres': 'postre.png',
       'acompañamientos': 'salsas-acomp.png',
       'menu-del-dia': 'menu-del-dia.png',
-      'menu-fin-de-ano': 'menu-fin-ano-8.png',
+      'menu-fin-de-ano': 'menu-fin-ano.png',
       'sandwich': 'sandwich.png',
       'desayunos': 'desayuno.png',
       'desayuno': 'desayuno.png',
@@ -72,14 +72,15 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
   );
 
   // Posiciones y tamaños para desktop - arriba del logo
+  // Imágenes más hacia los extremos: izquierda más a la izquierda, derecha más a la derecha
   const getImageStyle = (index: number) => {
     const positions = [
-      { top: '5%', left: '5%', width: '100px', height: '100px' },
-      { top: '8%', right: '8%', width: '90px', height: '90px' },
-      { top: '20%', left: '3%', width: '110px', height: '110px' },
-      { top: '25%', right: '5%', width: '95px', height: '95px' },
-      { top: '35%', left: '8%', width: '105px', height: '105px' },
-      { top: '40%', right: '10%', width: '100px', height: '100px' },
+      { top: '5%', left: '-5%', width: '100px', height: '100px' }, // Más a la izquierda (fuera del viewport)
+      { top: '8%', right: '-5%', width: '90px', height: '90px' }, // Más a la derecha (fuera del viewport)
+      { top: '20%', left: '-8%', width: '110px', height: '110px' }, // Más a la izquierda
+      { top: '25%', right: '-8%', width: '95px', height: '95px' }, // Más a la derecha
+      { top: '35%', left: '-3%', width: '105px', height: '105px' }, // Más a la izquierda
+      { top: '40%', right: '-3%', width: '100px', height: '100px' }, // Más a la derecha
     ];
     
     const position = positions[index % positions.length];
@@ -144,11 +145,15 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
         })}
       </div>
 
-      {/* Hero Mobile: Carrusel de 2 imágenes - arriba del logo */}
+      {/* Hero Mobile: Carrusel de 2 imágenes - arriba del logo, más cerca de los bordes */}
       <div className="md:hidden absolute top-0 left-0 right-0 h-[50vh] overflow-hidden pointer-events-none z-0">
-        <div className="relative w-full h-full flex items-center justify-center gap-4 pt-8">
+        <div className="relative w-full h-full flex items-center justify-between gap-4 pt-8 px-2">
           {mobileImages.slice(0, 2).map((image, index) => {
             const imageSlug = image.split('/')[1] || '';
+            // Primera imagen a la izquierda, segunda a la derecha
+            const positionStyle = index === 0 
+              ? { left: '0%', right: 'auto' } 
+              : { right: '0%', left: 'auto' };
             return (
               <div
                 key={`mobile-${currentIndex + index}`}
@@ -157,6 +162,7 @@ export default function HeroDynamic({ categories }: HeroDynamicProps) {
                   width: '120px',
                   height: '120px',
                   animationDelay: `${index * 0.2}s`,
+                  ...positionStyle,
                 }}
               >
                 <img
