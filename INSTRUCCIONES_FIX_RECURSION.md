@@ -78,3 +78,4 @@ Si después de ejecutar la migración aún hay errores:
 **Esta migración es segura y no afecta los datos existentes.**
 
 
+

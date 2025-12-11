@@ -122,3 +122,4 @@ Te mostrará:
 **Ejecuta el script de verificación primero para ver qué está pasando.**
 
 
+

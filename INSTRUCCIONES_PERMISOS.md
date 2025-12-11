@@ -98,3 +98,4 @@ Si ves errores de permisos:
 **¿Problemas?** Revisa los logs de Supabase o contacta al desarrollador.
 
 
+

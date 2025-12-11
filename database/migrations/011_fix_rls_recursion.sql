@@ -159,3 +159,4 @@ WHERE proname IN ('get_user_role', 'is_admin_or_encargado', 'is_admin')
 ORDER BY proname;
 
 
+

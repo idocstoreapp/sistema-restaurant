@@ -30,3 +30,4 @@ WHERE tablename = 'movimientos_stock'
 ORDER BY policyname;
 
 
+
