@@ -37,18 +37,42 @@ interface BoletaClienteProps {
 export default function BoletaCliente({ orden, items, onClose }: BoletaClienteProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    if (!printWindow) {
+      // Si no se puede abrir ventana, usar impresión normal
+      window.print();
+      return;
+    }
+
+    const styles = '@page { size: 80mm auto; margin: 0; padding: 0; } * { margin: 0; padding: 0; box-sizing: border-box; } body { width: 80mm; margin: 0; padding: 5mm; font-family: "Courier New", Courier, monospace; font-size: 9pt; line-height: 1.4; background: white; color: black; } .boleta-header { text-align: center; margin-bottom: 6px; } .boleta-logo { font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; } .boleta-subtitle { font-size: 8pt; color: #555; margin-bottom: 4px; } .boleta-separator-small { border-top: 1px solid #333; margin: 4px 0; } .boleta-info { font-size: 8pt; line-height: 1.4; text-align: left; margin-top: 4px; } .boleta-info div { margin: 1px 0; } .boleta-separator { border-top: 1px dashed #333; margin: 6px 0; } .boleta-items { margin: 6px 0; } .boleta-items-header { display: grid; grid-template-columns: 25px 1fr 60px; gap: 3px; font-weight: bold; font-size: 8pt; padding-bottom: 3px; border-bottom: 1px solid #333; margin-bottom: 4px; } .boleta-item { display: grid; grid-template-columns: 25px 1fr 60px; gap: 3px; font-size: 8pt; margin: 2px 0; padding: 1px 0; } .boleta-item-cantidad { text-align: center; font-weight: bold; } .boleta-item-descripcion { word-break: break-word; font-size: 8pt; } .boleta-item-total { text-align: right; font-weight: bold; font-size: 8pt; } .boleta-totales { margin: 8px 0; font-size: 9pt; } .boleta-total-line { display: flex; justify-content: space-between; margin: 3px 0; font-size: 9pt; } .boleta-total-final { font-size: 11pt; font-weight: bold; border-top: 2px solid black; padding-top: 4px; margin-top: 6px; } .boleta-pago { font-size: 8pt; text-align: center; padding: 4px; background: #f0f0f0; border: 1px solid #333; margin: 6px 0; } .boleta-pago div { margin: 2px 0; } .boleta-footer { text-align: center; font-size: 8pt; margin-top: 10px; padding-top: 6px; border-top: 1px solid #333; } .boleta-footer-small { font-size: 7pt; color: #666; margin-top: 3px; }';
+    
+    const content = printRef.current.innerHTML;
+    
+    printWindow.document.write('<!DOCTYPE html><html><head><title>Boleta Cliente</title><style>' + styles + '</style></head><body>' + content + '</body></html>');
+    
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      if (onClose) {
+        setTimeout(() => onClose(), 500);
+      }
+    }, 250);
+  };
+
   useEffect(() => {
     // Auto-imprimir cuando se monta el componente
     const timer = setTimeout(() => {
-      window.print();
+      handlePrint();
     }, 500);
 
     return () => clearTimeout(timer);
   }, []);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CL', {

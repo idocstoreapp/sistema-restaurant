@@ -36,18 +36,42 @@ interface ComandaCocinaProps {
 export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    if (!printWindow) {
+      // Si no se puede abrir ventana, usar impresión normal
+      window.print();
+      return;
+    }
+
+    const styles = '@page { size: 80mm auto; margin: 0; padding: 0; } * { margin: 0; padding: 0; box-sizing: border-box; } body { width: 80mm; margin: 0; padding: 5mm; font-family: "Courier New", Courier, monospace; font-size: 10pt; line-height: 1.3; background: white; color: black; } .comanda-header { text-align: center; margin-bottom: 8px; } .comanda-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; border-bottom: 2px solid black; padding-bottom: 4px; } .comanda-info { font-size: 9pt; line-height: 1.5; } .comanda-info div { margin: 2px 0; } .comanda-separator { border-top: 1px dashed #333; margin: 6px 0; } .comanda-section { margin: 8px 0; } .comanda-item { margin: 4px 0; padding: 3px 0; } .comanda-item-header { display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 11pt; } .comanda-item-cantidad { font-size: 12pt; min-width: 18px; } .comanda-item-nombre { flex: 1; text-transform: uppercase; } .comanda-item-notas { margin-left: 24px; font-size: 8pt; font-style: italic; color: #555; margin-top: 2px; } .comanda-nota { font-size: 9pt; padding: 4px; background: #f0f0f0; border-left: 2px solid black; margin: 6px 0; } .comanda-footer { text-align: center; font-size: 8pt; margin-top: 10px; padding-top: 6px; border-top: 1px solid #333; } .comanda-timestamp { margin-top: 3px; color: #666; }';
+    
+    const content = printRef.current.innerHTML;
+    
+    printWindow.document.write('<!DOCTYPE html><html><head><title>Comanda de Cocina</title><style>' + styles + '</style></head><body>' + content + '</body></html>');
+    
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      if (onClose) {
+        setTimeout(() => onClose(), 500);
+      }
+    }, 250);
+  };
+
   useEffect(() => {
     // Auto-imprimir cuando se monta el componente
     const timer = setTimeout(() => {
-      window.print();
+      handlePrint();
     }, 500);
 
     return () => clearTimeout(timer);
   }, []);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   // Agrupar items por categoría para mejor organización en cocina
   const itemsPorCategoria = items.reduce((acc, item) => {
