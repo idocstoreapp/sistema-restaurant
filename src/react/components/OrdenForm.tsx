@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCLP } from '@/lib/currency';
+import ComandaCocina from './ComandaCocina';
+import BoletaCliente from './BoletaCliente';
 
 interface MenuItem {
   id: number;
@@ -42,6 +44,9 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
   const [saving, setSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string }>>([]);
+  const [showComanda, setShowComanda] = useState(false);
+  const [showBoleta, setShowBoleta] = useState(false);
+  const [mesaInfo, setMesaInfo] = useState<{ numero: number } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -49,15 +54,18 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
 
   async function loadData() {
     try {
-      // Cargar orden
+      // Cargar orden con información de mesa
       const { data: ordenData, error: ordenError } = await supabase
         .from('ordenes_restaurante')
-        .select('*')
+        .select('*, mesas(numero)')
         .eq('id', ordenId)
         .single();
 
       if (ordenError) throw ordenError;
       setOrden(ordenData);
+      if (ordenData.mesas) {
+        setMesaInfo(ordenData.mesas);
+      }
 
       // Cargar items de la orden
       const { data: itemsData, error: itemsError } = await supabase
@@ -232,8 +240,8 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
           .eq('id', orden.mesa_id);
       }
 
-      alert('Orden pagada exitosamente');
-      window.location.href = '/admin/mesas';
+      // Mostrar boleta antes de redirigir
+      setShowBoleta(true);
     } catch (error: any) {
       alert('Error pagando orden: ' + error.message);
     } finally {
@@ -272,9 +280,15 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
             Estado: <span className="font-semibold capitalize">{orden.estado}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => updateEstado('preparing')}
+            onClick={() => {
+              updateEstado('preparing');
+              // Imprimir comanda cuando se marca como "en preparación"
+              if (items.length > 0) {
+                setShowComanda(true);
+              }
+            }}
             disabled={orden.estado !== 'pending' || saving}
             className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
           >
@@ -286,6 +300,20 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
             Lista
+          </button>
+          <button
+            onClick={() => setShowComanda(true)}
+            disabled={items.length === 0}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            🖨️ Comanda Cocina
+          </button>
+          <button
+            onClick={() => setShowBoleta(true)}
+            disabled={items.length === 0}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          >
+            🧾 Boleta Cliente
           </button>
           <button
             onClick={pagarOrden}
@@ -400,6 +428,40 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal de Comanda Cocina */}
+      {showComanda && orden && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <ComandaCocina
+              orden={{ ...orden, mesas: mesaInfo || undefined }}
+              items={items}
+              onClose={() => setShowComanda(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Boleta Cliente */}
+      {showBoleta && orden && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <BoletaCliente
+              orden={{ ...orden, mesas: mesaInfo || undefined }}
+              items={items}
+              onClose={() => {
+                setShowBoleta(false);
+                // Si la orden está pagada, redirigir después de imprimir boleta
+                if (orden.estado === 'paid') {
+                  setTimeout(() => {
+                    window.location.href = '/admin/mesas';
+                  }, 1000);
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

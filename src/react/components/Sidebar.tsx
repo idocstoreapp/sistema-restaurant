@@ -30,6 +30,7 @@ export default function Sidebar({ currentPath }: SidebarProps) {
 
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/admin/menu', label: 'Gestión del Menú', icon: '🍽️' },
     { path: '/admin/mesas', label: 'Mesas (POS)', icon: '🪑' },
     { path: '/admin/stock', label: 'Gestión de Stock', icon: '📦' },
     { path: '/admin/ingredientes', label: 'Ingredientes', icon: '🥕' },
