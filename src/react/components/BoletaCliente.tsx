@@ -145,7 +145,7 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
         <div className="boleta-header">
           <div className="boleta-logo">GOURMET ÁRABE SPA</div>
           <div className="boleta-subtitle">RUT: 77669643-9</div>
-          <div className="boleta-subtitle">Almirante Pastene 49 Local 49, Providencia</div>
+          <div className="boleta-subtitle">Providencia 1388 Local 49</div>
           <div className="boleta-subtitle">Celular: 939459286</div>
           <div className="boleta-separator-small"></div>
           <div className="boleta-info">
