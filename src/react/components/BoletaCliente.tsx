@@ -85,8 +85,14 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
   // En Chile, el IVA es 19%
   const iva = subtotal * 0.19;
-  // Usar el total de la orden si está disponible, sino calcularlo
-  const total = orden.total || (subtotal + iva);
+  // Calcular propina sugerida (10%)
+  const propina = subtotal * 0.1;
+  // Total sin propina
+  const totalSinPropina = subtotal + iva;
+  // Total con propina (mostrar en grande)
+  const totalConPropina = totalSinPropina + propina;
+  // Usar el total de la orden si está disponible (puede incluir propina)
+  const total = orden.total || totalConPropina;
 
   return (
     <>
@@ -112,12 +118,14 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
       <div ref={printRef} className="boleta-cliente">
         {/* Encabezado */}
         <div className="boleta-header">
-          <div className="boleta-logo">GOURMET ÁRABE</div>
-          <div className="boleta-subtitle">Restaurante de Comida Árabe</div>
+          <div className="boleta-logo">GOURMET ÁRABE SPA</div>
+          <div className="boleta-subtitle">RUT: 77669643-9</div>
+          <div className="boleta-subtitle">Almirante Pastene 49 Local 49, Providencia</div>
+          <div className="boleta-subtitle">Celular: 939459286</div>
           <div className="boleta-separator-small"></div>
           <div className="boleta-info">
             <div>Orden: {orden.numero_orden}</div>
-            <div>Mesa: {orden.mesas?.numero || 'N/A'}</div>
+            <div>Mesa: {orden.mesas?.numero || 'Para Llevar'}</div>
             <div>Fecha: {new Date(orden.created_at).toLocaleDateString('es-CL')}</div>
             <div>Hora: {new Date(orden.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
@@ -155,9 +163,17 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
             <span>IVA (19%):</span>
             <span>{formatPrice(iva)}</span>
           </div>
+          <div className="boleta-total-line" style={{ fontSize: '8pt', color: '#666' }}>
+            <span>Total (sin propina):</span>
+            <span>{formatPrice(totalSinPropina)}</span>
+          </div>
+          <div className="boleta-total-line" style={{ fontSize: '8pt', color: '#666' }}>
+            <span>Propina sugerida (10%):</span>
+            <span>{formatPrice(propina)}</span>
+          </div>
           <div className="boleta-total-line boleta-total-final">
             <span>TOTAL:</span>
-            <span>{formatPrice(total)}</span>
+            <span>{formatPrice(totalConPropina)}</span>
           </div>
         </div>
 

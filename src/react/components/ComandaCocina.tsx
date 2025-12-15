@@ -121,17 +121,50 @@ export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaPr
         {/* Items agrupados por categoría */}
         {Object.entries(itemsPorCategoria).map(([categoriaId, categoriaItems]) => (
           <div key={categoriaId} className="comanda-section">
-            {categoriaItems.map((item) => (
-              <div key={item.id} className="comanda-item">
-                <div className="comanda-item-header">
-                  <span className="comanda-item-cantidad">{item.cantidad}x</span>
-                  <span className="comanda-item-nombre">{item.menu_item?.name || 'Item'}</span>
+            {categoriaItems.map((item) => {
+              // Parsear personalización
+              let personalization: any = null;
+              try {
+                personalization = item.notas ? JSON.parse(item.notas) : null;
+              } catch {
+                // Si no es JSON, usar como texto simple
+                personalization = item.notas ? { detalles: item.notas } : null;
+              }
+
+              return (
+                <div key={item.id} className="comanda-item">
+                  <div className="comanda-item-header">
+                    <span className="comanda-item-cantidad">{item.cantidad}x</span>
+                    <span className="comanda-item-nombre">{item.menu_item?.name || 'Item'}</span>
+                  </div>
+                  {personalization && (
+                    <div className="comanda-item-notas">
+                      {personalization.agregado && (
+                        <div>Agregado: {personalization.agregado}</div>
+                      )}
+                      {personalization.salsas && personalization.salsas.length > 0 && (
+                        <div>Salsa{personalization.salsas.length > 1 ? 's' : ''}: {personalization.salsas.join(', ')}</div>
+                      )}
+                      {personalization.sinIngredientes && personalization.sinIngredientes.length > 0 && (
+                        <div>Sin: {personalization.sinIngredientes.join(', ')}</div>
+                      )}
+                      {personalization.bebidas && personalization.bebidas.length > 0 && (
+                        <div>
+                          Bebida{personalization.bebidas.length > 1 ? 's' : ''}:{' '}
+                          {personalization.bebidas.map((b: any) => {
+                            if (b.sabor) return `${b.nombre} (${b.sabor})`;
+                            return b.nombre;
+                          }).join(', ')}
+                        </div>
+                      )}
+                      {personalization.detalles && (
+                        <div>Nota: {personalization.detalles}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {item.notas && (
-                  <div className="comanda-item-notas">Nota: {item.notas}</div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
 

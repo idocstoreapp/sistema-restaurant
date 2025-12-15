@@ -22,9 +22,12 @@ interface Orden {
 export default function MesasView() {
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [ordenes, setOrdenes] = useState<Orden[]>([]);
+  const [ordenesParaLlevar, setOrdenesParaLlevar] = useState<Orden[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMesa, setSelectedMesa] = useState<Mesa | null>(null);
   const [showOrdenForm, setShowOrdenForm] = useState(false);
+  const [showParaLlevarModal, setShowParaLlevarModal] = useState(false);
+  const [showParaLlevarList, setShowParaLlevarList] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -32,17 +35,25 @@ export default function MesasView() {
 
   async function loadData() {
     try {
-      const [mesasRes, ordenesRes] = await Promise.all([
+      const [mesasRes, ordenesRes, paraLlevarRes] = await Promise.all([
         supabase.from('mesas').select('*').order('numero'),
         supabase
           .from('ordenes_restaurante')
           .select('*')
           .in('estado', ['pending', 'preparing', 'ready'])
+          .not('mesa_id', 'is', null)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('ordenes_restaurante')
+          .select('*')
+          .in('estado', ['pending', 'preparing', 'ready'])
+          .is('mesa_id', null)
           .order('created_at', { ascending: false }),
       ]);
 
       if (mesasRes.data) setMesas(mesasRes.data);
       if (ordenesRes.data) setOrdenes(ordenesRes.data);
+      if (paraLlevarRes.data) setOrdenesParaLlevar(paraLlevarRes.data);
 
       // Actualizar estado de mesas según órdenes activas
       if (mesasRes.data && ordenesRes.data) {
@@ -101,12 +112,26 @@ export default function MesasView() {
     <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Mesas (POS)</h1>
-        <button
-          onClick={loadData}
-          className="w-full sm:w-auto px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm sm:text-base"
-        >
-          🔄 Actualizar
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => {
+              if (ordenesParaLlevar.length > 0) {
+                setShowParaLlevarList(true);
+              } else {
+                setShowParaLlevarModal(true);
+              }
+            }}
+            className="flex-1 sm:flex-none px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm sm:text-base"
+          >
+            📦 Para Llevar {ordenesParaLlevar.length > 0 && `(${ordenesParaLlevar.length})`}
+          </button>
+          <button
+            onClick={loadData}
+            className="flex-1 sm:flex-none px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm sm:text-base"
+          >
+            🔄 Actualizar
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
@@ -160,6 +185,204 @@ export default function MesasView() {
           }}
         />
       )}
+
+      {showParaLlevarModal && (
+        <ParaLlevarModal
+          onClose={() => {
+            setShowParaLlevarModal(false);
+          }}
+          onSaved={() => {
+            setShowParaLlevarModal(false);
+            loadData();
+          }}
+        />
+      )}
+
+      {showParaLlevarList && (
+        <ParaLlevarListModal
+          ordenes={ordenesParaLlevar}
+          onClose={() => {
+            setShowParaLlevarList(false);
+          }}
+          onRefresh={loadData}
+        />
+      )}
+    </div>
+  );
+}
+
+// Modal para crear orden para llevar
+function ParaLlevarModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCreateOrden() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('No estás autenticado');
+        return;
+      }
+
+      // Generar número de orden único
+      const timestamp = Date.now();
+      const numeroOrden = `TAKE-${timestamp}`;
+
+      const { data: orden, error } = await supabase
+        .from('ordenes_restaurante')
+        .insert({
+          numero_orden: numeroOrden,
+          mesa_id: null, // Sin mesa para órdenes para llevar
+          mesero_id: user.id,
+          estado: 'pending',
+          total: 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      window.location.href = `/admin/ordenes/${orden.id}`;
+    } catch (error: any) {
+      alert('Error creando orden: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Crear Orden Para Llevar</h2>
+        <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
+          ¿Deseas crear una nueva orden para llevar?
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm sm:text-base"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleCreateOrden}
+            disabled={loading}
+            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 text-sm sm:text-base"
+          >
+            {loading ? 'Creando...' : 'Crear Orden'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Modal para listar órdenes para llevar
+function ParaLlevarListModal({
+  ordenes,
+  onClose,
+  onRefresh,
+}: {
+  ordenes: Orden[];
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCreateNew() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('No estás autenticado');
+        return;
+      }
+
+      const timestamp = Date.now();
+      const numeroOrden = `TAKE-${timestamp}`;
+
+      const { data: orden, error } = await supabase
+        .from('ordenes_restaurante')
+        .insert({
+          numero_orden: numeroOrden,
+          mesa_id: null,
+          mesero_id: user.id,
+          estado: 'pending',
+          total: 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      window.location.href = `/admin/ordenes/${orden.id}`;
+    } catch (error: any) {
+      alert('Error creando orden: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg sm:text-xl font-bold">Órdenes Para Llevar</h2>
+          <button
+            onClick={onClose}
+            className="px-3 py-1 text-gray-600 hover:text-gray-800"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <button
+            onClick={handleCreateNew}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+          >
+            {loading ? 'Creando...' : '+ Nueva Orden Para Llevar'}
+          </button>
+        </div>
+
+        {ordenes.length === 0 ? (
+          <p className="text-gray-600 text-center py-8">No hay órdenes para llevar pendientes</p>
+        ) : (
+          <div className="space-y-2">
+            {ordenes.map((orden) => (
+              <button
+                key={orden.id}
+                onClick={() => {
+                  window.location.href = `/admin/ordenes/${orden.id}`;
+                }}
+                className="w-full p-3 border-2 border-orange-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 text-left"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-semibold">{orden.numero_orden}</div>
+                    <div className="text-sm text-gray-600">
+                      {new Date(orden.created_at).toLocaleString('es-CL')}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Estado: <span className="capitalize">{orden.estado}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-lg">{formatCLP(orden.total)}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

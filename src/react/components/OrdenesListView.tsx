@@ -92,6 +92,24 @@ export default function OrdenesListView() {
     .filter((o) => o.estado === 'paid')
     .reduce((sum, o) => sum + o.total, 0);
 
+  async function eliminarOrden(ordenId: string) {
+    if (!confirm('¿Estás seguro de eliminar esta orden? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ordenes_restaurante')
+        .delete()
+        .eq('id', ordenId);
+
+      if (error) throw error;
+      loadOrdenes();
+    } catch (error: any) {
+      alert('Error eliminando orden: ' + error.message);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -173,12 +191,20 @@ export default function OrdenesListView() {
                 <p><span className="font-medium">Pago:</span> {orden.metodo_pago}</p>
               )}
             </div>
-            <a
-              href={`/admin/ordenes/${orden.id}`}
-              className="block w-full text-center px-3 py-2 bg-slate-600 text-white rounded text-xs sm:text-sm hover:bg-slate-700"
-            >
-              Ver Detalles
-            </a>
+            <div className="flex gap-2">
+              <a
+                href={`/admin/ordenes/${orden.id}`}
+                className="flex-1 text-center px-3 py-2 bg-slate-600 text-white rounded text-xs sm:text-sm hover:bg-slate-700"
+              >
+                Ver/Editar
+              </a>
+              <button
+                onClick={() => eliminarOrden(orden.id)}
+                className="px-3 py-2 bg-red-600 text-white rounded text-xs sm:text-sm hover:bg-red-700"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -226,12 +252,21 @@ export default function OrdenesListView() {
                     {orden.metodo_pago || '-'}
                   </td>
                   <td className="px-4 py-3">
-                    <a
-                      href={`/admin/ordenes/${orden.id}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Ver
-                    </a>
+                    <div className="flex gap-2">
+                      <a
+                        href={`/admin/ordenes/${orden.id}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Ver/Editar
+                      </a>
+                      <button
+                        onClick={() => eliminarOrden(orden.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                        title="Eliminar orden"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { formatCLP } from '@/lib/currency';
 import ComandaCocina from './ComandaCocina';
 import BoletaCliente from './BoletaCliente';
+import ItemPersonalizationModal from './ItemPersonalizationModal';
 
 interface MenuItem {
   id: number;
@@ -47,6 +48,11 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
   const [showComanda, setShowComanda] = useState(false);
   const [showBoleta, setShowBoleta] = useState(false);
   const [mesaInfo, setMesaInfo] = useState<{ numero: number } | null>(null);
+  const [showPersonalizationModal, setShowPersonalizationModal] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
+  const [showPagoModal, setShowPagoModal] = useState(false);
+  const [showEditItemModal, setShowEditItemModal] = useState(false);
+  const [selectedItemToEdit, setSelectedItemToEdit] = useState<OrdenItem | null>(null);
 
   useEffect(() => {
     if (ordenId) {
@@ -131,12 +137,37 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
     }
   }
 
-  async function addItem(menuItem: MenuItem) {
+  function handleItemClick(menuItem: MenuItem) {
+    // Verificar si necesita personalización
+    const category = categories.find(c => c.id === menuItem.category_id);
+    const categorySlug = category?.slug?.toLowerCase() || '';
+    const needsPersonalization = 
+      categorySlug === 'menu-del-dia' || 
+      categorySlug === 'shawarmas' || 
+      categorySlug === 'shawarma' ||
+      categorySlug === 'promociones' ||
+      categorySlug === 'promocion' ||
+      categorySlug === 'bebestibles' ||
+      categorySlug === 'bebidas';
+
+    if (needsPersonalization) {
+      setSelectedMenuItem(menuItem);
+      setShowPersonalizationModal(true);
+    } else {
+      // Agregar directamente sin personalización
+      addItemWithPersonalization(menuItem, null);
+    }
+  }
+
+  async function addItemWithPersonalization(menuItem: MenuItem, personalization: any) {
     try {
       const existingItem = items.find((i) => i.menu_item_id === menuItem.id);
 
+      // Convertir personalización a JSON string para guardar en notas
+      const notasJson = personalization ? JSON.stringify(personalization) : null;
+
       if (existingItem) {
-        // Actualizar cantidad
+        // Actualizar cantidad y notas
         const newCantidad = existingItem.cantidad + 1;
         const newSubtotal = newCantidad * existingItem.precio_unitario;
 
@@ -145,6 +176,7 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
           .update({
             cantidad: newCantidad,
             subtotal: newSubtotal,
+            notas: notasJson || existingItem.notas, // Mantener notas existentes si no hay nuevas
           })
           .eq('id', existingItem.id);
 
@@ -159,6 +191,7 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
             cantidad: 1,
             precio_unitario: menuItem.price,
             subtotal: menuItem.price,
+            notas: notasJson,
           })
           .select()
           .single();
@@ -170,6 +203,52 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
     } catch (error: any) {
       alert('Error agregando item: ' + error.message);
     }
+  }
+
+  async function updateItemPersonalization(itemId: string, personalization: any) {
+    try {
+      const notasJson = personalization ? JSON.stringify(personalization) : null;
+      const { error } = await supabase
+        .from('orden_items')
+        .update({ notas: notasJson })
+        .eq('id', itemId);
+
+      if (error) throw error;
+      await loadData();
+    } catch (error: any) {
+      alert('Error actualizando personalización: ' + error.message);
+    }
+  }
+
+  function parsePersonalization(notas?: string): any {
+    if (!notas) return null;
+    try {
+      return JSON.parse(notas);
+    } catch {
+      // Si no es JSON, retornar como texto simple
+      return { detalles: notas };
+    }
+  }
+
+  function formatPersonalizationText(personalization: any): string {
+    if (!personalization) return '';
+    const parts: string[] = [];
+    if (personalization.agregado) parts.push(`Agregado: ${personalization.agregado}`);
+    if (personalization.salsas && personalization.salsas.length > 0) {
+      parts.push(`Salsa${personalization.salsas.length > 1 ? 's' : ''}: ${personalization.salsas.join(', ')}`);
+    }
+    if (personalization.sinIngredientes && personalization.sinIngredientes.length > 0) {
+      parts.push(`Sin: ${personalization.sinIngredientes.join(', ')}`);
+    }
+    if (personalization.bebidas && personalization.bebidas.length > 0) {
+      const bebidasText = personalization.bebidas.map((b: any) => {
+        if (b.sabor) return `${b.nombre} (${b.sabor})`;
+        return b.nombre;
+      }).join(', ');
+      parts.push(`Bebida${personalization.bebidas.length > 1 ? 's' : ''}: ${bebidasText}`);
+    }
+    if (personalization.detalles) parts.push(personalization.detalles);
+    return parts.join(' | ');
   }
 
   async function updateItemCantidad(itemId: string, cantidad: number) {
@@ -251,8 +330,32 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
         return;
       }
 
-      const metodoPago = prompt('Método de pago (EFECTIVO/TARJETA/TRANSFERENCIA):');
-      if (!metodoPago) return;
+      setShowPagoModal(true);
+      return;
+    } catch (error: any) {
+      alert('Error pagando orden: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmarPago(metodoPago: string, conPropina: boolean) {
+    try {
+      setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('No estás autenticado');
+        return;
+      }
+
+      if (!metodoPago) {
+        alert('Por favor selecciona un método de pago');
+        return;
+      }
+
+      // Calcular total con o sin propina
+      const propina = conPropina ? orden.total * 0.1 : 0;
+      const totalFinal = orden.total + propina;
 
       const { error } = await supabase
         .from('ordenes_restaurante')
@@ -260,6 +363,7 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
           estado: 'paid',
           metodo_pago: metodoPago.toUpperCase(),
           paid_at: new Date().toISOString(),
+          total: totalFinal,
         })
         .eq('id', ordenId);
 
@@ -273,6 +377,7 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
           .eq('id', orden.mesa_id);
       }
 
+      setShowPagoModal(false);
       // Mostrar boleta antes de redirigir
       setShowBoleta(true);
     } catch (error: any) {
@@ -446,7 +551,7 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
               {filteredMenuItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => addItem(item)}
+                  onClick={() => handleItemClick(item)}
                   className="p-2 sm:p-3 border border-slate-200 rounded-lg hover:border-slate-400 hover:bg-slate-50 text-left"
                 >
                   <div className="font-semibold text-xs sm:text-sm line-clamp-2">{item.name}</div>
@@ -477,6 +582,15 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
                       <div className="font-medium text-xs sm:text-sm truncate">
                         {item.menu_item?.name || 'Item'}
                       </div>
+                      {item.notas && (() => {
+                        const personalization = parsePersonalization(item.notas);
+                        const personalizationText = formatPersonalizationText(personalization);
+                        return personalizationText ? (
+                          <div className="text-xs text-blue-600 mt-1 italic">
+                            {personalizationText}
+                          </div>
+                        ) : null;
+                      })()}
                       <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
                         <button
                           onClick={() =>
@@ -494,6 +608,16 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
                           className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center border border-slate-300 rounded hover:bg-slate-100 text-xs sm:text-sm"
                         >
                           +
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedItemToEdit(item);
+                            setShowEditItemModal(true);
+                          }}
+                          className="ml-1 sm:ml-2 text-blue-600 hover:text-blue-800 text-xs"
+                          title="Editar personalización"
+                        >
+                          ✏️
                         </button>
                         <button
                           onClick={() => removeItem(item.id!)}
@@ -553,6 +677,110 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
                 }
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Personalización */}
+      {showPersonalizationModal && selectedMenuItem && (
+        <ItemPersonalizationModal
+          menuItem={selectedMenuItem}
+          category={categories.find(c => c.id === selectedMenuItem.category_id) || null}
+          onConfirm={(personalization) => {
+            addItemWithPersonalization(selectedMenuItem, personalization);
+            setShowPersonalizationModal(false);
+            setSelectedMenuItem(null);
+          }}
+          onCancel={() => {
+            setShowPersonalizationModal(false);
+            setSelectedMenuItem(null);
+          }}
+        />
+      )}
+
+      {/* Modal de Editar Item */}
+      {showEditItemModal && selectedItemToEdit && (
+        <ItemPersonalizationModal
+          menuItem={selectedItemToEdit.menu_item!}
+          category={categories.find(c => c.id === selectedItemToEdit.menu_item?.category_id) || null}
+          initialPersonalization={(() => {
+            try {
+              return selectedItemToEdit.notas ? JSON.parse(selectedItemToEdit.notas) : null;
+            } catch {
+              return null;
+            }
+          })()}
+          onConfirm={(personalization) => {
+            updateItemPersonalization(selectedItemToEdit.id!, personalization);
+            setShowEditItemModal(false);
+            setSelectedItemToEdit(null);
+          }}
+          onCancel={() => {
+            setShowEditItemModal(false);
+            setSelectedItemToEdit(null);
+          }}
+        />
+      )}
+
+      {/* Modal de Pago */}
+      {showPagoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">Pagar Orden</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-2">Método de Pago:</label>
+              <select
+                id="metodoPago"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                defaultValue=""
+              >
+                <option value="">Selecciona método de pago</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="DÉBITO">Débito</option>
+                <option value="CRÉDITO">Crédito</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm font-semibold mb-2">Total: {formatCLP(orden.total)}</div>
+              <div className="text-xs text-gray-600 mb-2">Propina sugerida (10%): {formatCLP(orden.total * 0.1)}</div>
+              <div className="text-sm font-semibold">Total con propina: {formatCLP(orden.total * 1.1)}</div>
+            </div>
+
+            <div className="mb-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="conPropina"
+                  defaultChecked={true}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Incluir propina del 10%</span>
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowPagoModal(false);
+                  setSaving(false);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  const metodoPago = (document.getElementById('metodoPago') as HTMLSelectElement).value;
+                  const conPropina = (document.getElementById('conPropina') as HTMLInputElement).checked;
+                  confirmarPago(metodoPago, conPropina);
+                }}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Confirmar Pago
+              </button>
+            </div>
           </div>
         </div>
       )}
