@@ -64,14 +64,17 @@ export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaPr
     }, 250);
   };
 
-  useEffect(() => {
-    // Auto-imprimir cuando se monta el componente
-    const timer = setTimeout(() => {
-      handlePrint();
-    }, 500);
+  // COMENTADO: Auto-impresión deshabilitada
+  // La impresión ahora se maneja automáticamente desde el backend
+  // cuando cambia el estado de la orden
+  // useEffect(() => {
+  //   // Auto-imprimir cuando se monta el componente
+  //   const timer = setTimeout(() => {
+  //     handlePrint();
+  //   }, 500);
 
-    return () => clearTimeout(timer);
-  }, []);
+  //   return () => clearTimeout(timer);
+  // }, []);
 
   // Agrupar items por categoría para mejor organización en cocina
   const itemsPorCategoria = items.reduce((acc, item) => {
