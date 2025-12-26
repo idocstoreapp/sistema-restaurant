@@ -8,11 +8,44 @@
  */
 
 // Cargar variables de entorno desde .env
+// IMPORTANTE: dotenv debe estar instalado (npm install dotenv)
+let dotenvLoaded = false;
 try {
-  require('dotenv').config();
-  console.log('✅ Archivo .env cargado');
+  require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+  dotenvLoaded = true;
+  console.log('✅ Archivo .env cargado con dotenv');
 } catch (error) {
-  console.warn('⚠️  dotenv no disponible, usando variables de entorno del sistema');
+  console.warn('⚠️  dotenv no disponible o error cargando .env:', error.message);
+  console.warn('⚠️  Intentando cargar .env manualmente...');
+  
+  // Fallback: intentar cargar .env manualmente
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      envContent.split('\n').forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine.includes('=')) {
+          const [key, ...valueParts] = trimmedLine.split('=');
+          const value = valueParts.join('=').trim();
+          if (key && value) {
+            process.env[key.trim()] = value;
+          }
+        }
+      });
+      console.log('✅ Archivo .env cargado manualmente');
+      dotenvLoaded = true;
+    }
+  } catch (manualError) {
+    console.error('❌ Error cargando .env manualmente:', manualError.message);
+  }
+}
+
+if (!dotenvLoaded) {
+  console.error('❌ NO SE PUDO CARGAR EL ARCHIVO .env');
+  console.error('❌ El servicio usará valores por defecto o variables del sistema');
 }
 
 const http = require('http');
@@ -35,9 +68,21 @@ const API_TOKEN = process.env.PRINT_SERVICE_TOKEN || 'cambiar-este-token';
 
 console.log('🖨️  Servicio de Impresión Local iniciado');
 console.log(`📡 Escuchando en puerto ${PORT}`);
+console.log(`🔐 .env cargado: ${dotenvLoaded ? 'SÍ' : 'NO'}`);
 console.log(`🔐 Token configurado: ${API_TOKEN ? 'SÍ' : 'NO'}`);
-console.log(`🔐 Token (primeros 20 chars): ${API_TOKEN ? API_TOKEN.substring(0, 20) + '...' : 'NO CONFIGURADO'}`);
+console.log(`🔐 Token (completo): ${API_TOKEN || 'NO CONFIGURADO'}`);
 console.log(`🔐 Token (longitud): ${API_TOKEN ? API_TOKEN.length : 0} caracteres`);
+console.log(`🔐 Token (primeros 30): ${API_TOKEN ? API_TOKEN.substring(0, 30) + '...' : 'NO CONFIGURADO'}`);
+
+// Verificar si está usando el valor por defecto
+if (API_TOKEN === 'cambiar-este-token') {
+  console.error('⚠️  ADVERTENCIA: El servicio está usando el token por defecto "cambiar-este-token"');
+  console.error('⚠️  Esto significa que el .env NO se cargó correctamente');
+  console.error('⚠️  Verifica que:');
+  console.error('   1. El archivo .env existe en la misma carpeta que server.js');
+  console.error('   2. El archivo .env tiene la línea: PRINT_SERVICE_TOKEN=tu-token-aqui');
+  console.error('   3. dotenv está instalado: npm install dotenv');
+}
 
 // Conectar a impresora
 function connectPrinter(type, path, ip, port) {
