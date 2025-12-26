@@ -46,17 +46,23 @@ export default function Sidebar({ currentPath, isOpen = true, onToggle }: Sideba
     window.location.href = '/admin/login';
   };
 
-  const menuItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/admin/menu', label: 'Gestión del Menú', icon: '🍽️' },
-    { path: '/admin/mesas', label: 'Mesas (POS)', icon: '🪑' },
-    { path: '/admin/stock', label: 'Gestión de Stock', icon: '📦' },
-    { path: '/admin/ingredientes', label: 'Ingredientes', icon: '🥕' },
-    { path: '/admin/recetas', label: 'Recetas', icon: '📝' },
-    { path: '/admin/compras', label: 'Compras', icon: '🛒' },
-    { path: '/admin/ordenes', label: 'Órdenes', icon: '📋' },
-    { path: '/admin/menu-imprimible', label: 'Menú Imprimible', icon: '🖨️' },
+  const allMenuItems = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'encargado', 'mesero'] },
+    { path: '/admin/menu', label: 'Gestión del Menú', icon: '🍽️', roles: ['admin', 'encargado'] },
+    { path: '/admin/mesas', label: 'Mesas (POS)', icon: '🪑', roles: ['admin', 'encargado', 'mesero'] },
+    { path: '/admin/stock', label: 'Gestión de Stock', icon: '📦', roles: ['admin', 'encargado'] },
+    { path: '/admin/ingredientes', label: 'Ingredientes', icon: '🥕', roles: ['admin', 'encargado'] },
+    { path: '/admin/recetas', label: 'Recetas', icon: '📝', roles: ['admin', 'encargado'] },
+    { path: '/admin/compras', label: 'Compras', icon: '🛒', roles: ['admin', 'encargado'] },
+    { path: '/admin/ordenes', label: 'Órdenes', icon: '📋', roles: ['admin', 'encargado', 'mesero'] },
+    { path: '/admin/empleados', label: 'Empleados', icon: '👥', roles: ['admin', 'encargado'] },
+    { path: '/admin/menu-imprimible', label: 'Menú Imprimible', icon: '🖨️', roles: ['admin', 'encargado'] },
   ];
+
+  // Filtrar menú según rol del usuario
+  const menuItems = user?.role 
+    ? allMenuItems.filter(item => item.roles.includes(user.role))
+    : allMenuItems;
 
   const isActive = (path: string) => currentPath === path;
 

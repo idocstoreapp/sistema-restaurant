@@ -36,15 +36,15 @@ const SALSAS = [
   'Yogurt',
   'Especial',
   'Mayonesa',
-  'Mostaza'
+  'Mostaza',
+  'Cilantro'
 ];
 
 // Agregados para menú del día
 const AGREGADOS = [
-  'Arroz Árabe',
-  'Papas Fritas',
-  'Papas Rústicas',
-  'Cuscús'
+  'Arroz',
+  'Cuscús',
+  'Papas Fritas'
 ];
 
 // Ingredientes que se pueden quitar en shawarmas
@@ -168,10 +168,7 @@ export default function ItemPersonalizationModal({
         alert('Por favor selecciona 2 salsas');
         return;
       }
-      if (!personalization.bebidas || personalization.bebidas.length !== 2) {
-        alert('Por favor selecciona 2 bebidas');
-        return;
-      }
+      // Las bebidas no son requeridas en promociones, se agregan aparte desde bebestibles
     }
     if (isBebida && (!personalization.bebidas || personalization.bebidas.length === 0 || !personalization.bebidas[0].nombre)) {
       alert('Por favor selecciona una bebida');
@@ -252,85 +249,35 @@ export default function ItemPersonalizationModal({
           </>
         )}
 
-        {/* Promociones - 2 salsas y 2 bebidas */}
+        {/* Promociones - Solo 2 salsas (bebidas se agregan aparte desde bebestibles) */}
         {isPromocion && (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-2">Salsas (2 a elección):</label>
-              <div className="grid grid-cols-2 gap-2">
-                {SALSAS.map((salsa) => (
-                  <button
-                    key={salsa}
-                    onClick={() => handleSalsaToggle(salsa)}
-                    className={`p-2 border-2 rounded-lg text-sm ${
-                      personalization.salsas?.includes(salsa)
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    disabled={personalization.salsas?.length === 2 && !personalization.salsas.includes(salsa)}
-                  >
-                    {salsa}
-                  </button>
-                ))}
-              </div>
-              {personalization.salsas && personalization.salsas.length > 0 && (
-                <p className="text-xs text-gray-600 mt-1">
-                  Seleccionadas: {personalization.salsas.join(', ')} ({personalization.salsas.length}/2)
-                </p>
-              )}
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-2">Bebidas (2 a elección):</label>
-              {(personalization.bebidas || []).map((bebida, index) => (
-                <div key={index} className="mb-2 flex gap-2">
-                  <select
-                    value={bebida.nombre}
-                    onChange={(e) => handleBebidaChange(index, e.target.value)}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    <option value="">Selecciona bebida</option>
-                    <option value="Agua">Agua</option>
-                    <option value="Bebida en Lata">Bebida en Lata</option>
-                    <option value="Jugo Watts">Jugo Watts</option>
-                    <option value="Jugo Natural">Jugo Natural</option>
-                    <option value="Té Árabe">Té Árabe</option>
-                    <option value="Café">Café</option>
-                  </select>
-                  {(bebida.nombre === 'Bebida en Lata' || bebida.nombre === 'Jugo Watts' || bebida.nombre === 'Jugo Natural') && (
-                    <input
-                      type="text"
-                      placeholder="Sabor"
-                      value={bebidaSabor[index] || ''}
-                      onChange={(e) => handleBebidaSaborChange(index, e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
-                    />
-                  )}
-                  {(personalization.bebidas?.length || 0) > 1 && (
-                    <button
-                      onClick={() => handleBebidaRemove(index)}
-                      className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-              {(personalization.bebidas?.length || 0) < 2 && (
+          <div className="mb-4">
+            <label className="block text-sm font-semibold mb-2">Salsas (2 a elección):</label>
+            <div className="grid grid-cols-2 gap-2">
+              {SALSAS.map((salsa) => (
                 <button
-                  onClick={handleBebidaAdd}
-                  className="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-sm hover:border-gray-400"
+                  key={salsa}
+                  onClick={() => handleSalsaToggle(salsa)}
+                  className={`p-2 border-2 rounded-lg text-sm ${
+                    personalization.salsas?.includes(salsa)
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  disabled={personalization.salsas?.length === 2 && !personalization.salsas.includes(salsa)}
                 >
-                  + Agregar Bebida
+                  {salsa}
                 </button>
-              )}
-              {personalization.bebidas && personalization.bebidas.length > 0 && (
-                <p className="text-xs text-gray-600 mt-1">
-                  Seleccionadas: {personalization.bebidas.length}/2
-                </p>
-              )}
+              ))}
             </div>
-          </>
+            {personalization.salsas && personalization.salsas.length > 0 && (
+              <p className="text-xs text-gray-600 mt-1">
+                Seleccionadas: {personalization.salsas.join(', ')} ({personalization.salsas.length}/2)
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-2 italic">
+              Nota: Las bebidas se agregan aparte desde la categoría de bebestibles
+            </p>
+          </div>
         )}
 
         {/* Bebidas individuales */}
@@ -358,7 +305,7 @@ export default function ItemPersonalizationModal({
               personalization.bebidas?.[0]?.nombre === 'Jugo Natural') && (
               <input
                 type="text"
-                placeholder="Sabor de la bebida"
+                placeholder="Escribe el sabor o tipo (ej: Cola, Naranja, Piña, etc.)"
                 value={personalization.bebidas[0].sabor || ''}
                 onChange={(e) => {
                   const bebidas = [{ ...personalization.bebidas![0], sabor: e.target.value }];

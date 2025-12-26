@@ -36,12 +36,14 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8">
-      <h1 className="text-2xl font-bold text-center mb-6">Iniciar Sesión</h1>
+    <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full max-w-md mx-auto">
+      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-slate-900">
+        Iniciar Sesión
+      </h1>
       
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6" noValidate>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="email" className="block text-sm sm:text-base font-semibold text-slate-700 mb-2">
             Email
           </label>
           <input
@@ -50,13 +52,16 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold-500"
+            autoComplete="email"
+            aria-required="true"
+            aria-invalid={error ? 'true' : 'false'}
+            className="w-full min-h-[48px] px-4 py-3 text-base sm:text-lg border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-gold-300 focus:border-gold-500 transition-all"
             placeholder="tu@email.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="password" className="block text-sm sm:text-base font-semibold text-slate-700 mb-2">
             Contraseña
           </label>
           <input
@@ -65,13 +70,20 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold-500"
+            autoComplete="current-password"
+            aria-required="true"
+            aria-invalid={error ? 'true' : 'false'}
+            className="w-full min-h-[48px] px-4 py-3 text-base sm:text-lg border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-gold-300 focus:border-gold-500 transition-all"
             placeholder="••••••••"
           />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+          <div 
+            role="alert" 
+            aria-live="assertive"
+            className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm sm:text-base font-medium"
+          >
             {error}
           </div>
         )}
@@ -79,7 +91,8 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gold-500 hover:bg-gold-600 text-white font-semibold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label={loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          className="w-full min-h-[56px] bg-gold-500 hover:bg-gold-600 active:bg-gold-700 text-white font-bold text-base sm:text-lg py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-gold-300 transition-all"
         >
           {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>

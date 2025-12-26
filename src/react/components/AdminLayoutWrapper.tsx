@@ -59,7 +59,7 @@ export default function AdminLayoutWrapper({ children, currentPath }: AdminLayou
         </div>
 
         {/* Contenido principal con padding para móvil */}
-        <div className="pt-16 lg:pt-0 px-2 sm:px-4 lg:px-6 pb-4 lg:pb-6">
+        <div className="pt-16 lg:pt-0 px-3 sm:px-4 lg:px-6 pb-4 lg:pb-6 safe-area-inset">
           {children}
         </div>
       </main>

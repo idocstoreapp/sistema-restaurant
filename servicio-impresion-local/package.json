@@ -1,0 +1,17 @@
+{
+  "name": "servicio-impresion-local",
+  "version": "1.0.0",
+  "description": "Servicio local de impresión para sistema restaurante",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "escpos": "^3.0.0-alpha.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

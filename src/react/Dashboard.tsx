@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import KpiCard from './components/KpiCard';
 import { formatCLP } from '@/lib/currency';
+import { obtenerEstadisticasPropinas } from '@/lib/tips';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -19,6 +20,12 @@ export default function Dashboard() {
     stock_minimo: number;
     unidad_medida: string;
   }>>([]);
+  const [propinasStats, setPropinasStats] = useState<{
+    total: number;
+    porEmpleado: Array<{ empleado: any; total: number }>;
+    periodo: string;
+  } | null>(null);
+  const [periodoPropinas, setPeriodoPropinas] = useState<'semana' | 'quincena' | 'mes'>('semana');
 
   useEffect(() => {
     async function loadData() {
@@ -118,6 +125,14 @@ export default function Dashboard() {
           mesasOcupadas: mesasOcupadas || 0,
           gastosMes: totalGastos,
         });
+
+        // Cargar estadísticas de propinas
+        try {
+          const stats = await obtenerEstadisticasPropinas(periodoPropinas);
+          setPropinasStats(stats);
+        } catch (error) {
+          console.error('Error cargando estadísticas de propinas:', error);
+        }
       } catch (error) {
         console.error('Error cargando datos:', error);
       } finally {
@@ -126,7 +141,7 @@ export default function Dashboard() {
     }
 
     loadData();
-  }, []);
+  }, [periodoPropinas]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -165,6 +180,85 @@ export default function Dashboard() {
             value={formatCLP(kpis.gastosMes)}
             icon="💸"
           />
+        </div>
+
+        {/* KPIs de Propinas */}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6 md:mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base sm:text-lg font-semibold">Propinas</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPeriodoPropinas('semana')}
+                className={`px-3 py-1 text-xs sm:text-sm rounded ${
+                  periodoPropinas === 'semana'
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => setPeriodoPropinas('quincena')}
+                className={`px-3 py-1 text-xs sm:text-sm rounded ${
+                  periodoPropinas === 'quincena'
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Quincena
+              </button>
+              <button
+                onClick={() => setPeriodoPropinas('mes')}
+                className={`px-3 py-1 text-xs sm:text-sm rounded ${
+                  periodoPropinas === 'mes'
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Mes
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <KpiCard
+              title={`Propinas Total (${periodoPropinas})`}
+              value={formatCLP(propinasStats?.total || 0)}
+              icon="💵"
+            />
+          </div>
+
+          {propinasStats && propinasStats.porEmpleado.length > 0 ? (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">
+                Distribución por Empleado
+              </h3>
+              <div className="space-y-2">
+                {propinasStats.porEmpleado.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 bg-slate-50 rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium text-slate-900">
+                        {item.empleado?.nombre || 'Sin nombre'}
+                      </div>
+                      <div className="text-xs text-slate-600">
+                        {item.empleado?.funcion || 'Sin función'}
+                      </div>
+                    </div>
+                    <div className="text-lg font-semibold text-slate-900">
+                      {formatCLP(item.total)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-slate-500 text-center py-4">
+              No hay propinas registradas para este período
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

@@ -112,7 +112,7 @@ export default function MesasView() {
     <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Mesas (POS)</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-3 w-full sm:w-auto">
           <button
             onClick={() => {
               if (ordenesParaLlevar.length > 0) {
@@ -121,47 +121,61 @@ export default function MesasView() {
                 setShowParaLlevarModal(true);
               }
             }}
-            className="flex-1 sm:flex-none px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm sm:text-base"
+            aria-label={`Órdenes para llevar${ordenesParaLlevar.length > 0 ? `, ${ordenesParaLlevar.length} pendientes` : ''}`}
+            className="flex-1 sm:flex-none min-h-[48px] px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 active:bg-orange-800 text-base sm:text-lg font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-orange-300 transition-all"
           >
             📦 Para Llevar {ordenesParaLlevar.length > 0 && `(${ordenesParaLlevar.length})`}
           </button>
           <button
             onClick={loadData}
-            className="flex-1 sm:flex-none px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 text-sm sm:text-base"
+            aria-label="Actualizar lista de mesas"
+            className="flex-1 sm:flex-none min-h-[48px] px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 active:bg-slate-800 text-base sm:text-lg font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-slate-300 transition-all"
           >
             🔄 Actualizar
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
         {mesas.map((mesa) => {
           const orden = getMesaOrden(mesa.id);
+          const estado = orden ? 'ocupada' : mesa.estado;
           return (
             <button
               key={mesa.id}
               onClick={() => handleMesaClick(mesa)}
-              className={`p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:shadow-lg ${
-                orden
-                  ? 'border-red-300 bg-red-50'
-                  : 'border-green-300 bg-green-50 hover:border-green-400'
-              }`}
+              aria-label={`Mesa ${mesa.numero}, ${estado}, capacidad ${mesa.capacidad} personas${orden ? `, total ${formatCLP(orden.total)}` : ''}`}
+              className={`
+                min-h-[120px] sm:min-h-[140px] md:min-h-[160px]
+                p-4 sm:p-5 md:p-6 
+                rounded-xl border-3 
+                transition-all duration-200 
+                active:scale-95
+                focus:outline-none focus:ring-4 focus:ring-offset-2
+                ${orden
+                  ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                  : 'border-green-400 bg-green-50 hover:border-green-500 hover:bg-green-100 focus:ring-green-300'
+                }
+                shadow-md hover:shadow-xl
+              `}
             >
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">🪑</div>
-                <div className="font-semibold text-sm sm:text-base md:text-lg">Mesa {mesa.numero}</div>
-                <div className="text-xs sm:text-sm text-slate-600 mt-1">
+              <div className="text-center flex flex-col items-center justify-center h-full">
+                <div className="text-4xl sm:text-5xl md:text-6xl mb-2 sm:mb-3" aria-hidden="true">🪑</div>
+                <div className="font-bold text-base sm:text-lg md:text-xl text-slate-900 mb-1">
+                  Mesa {mesa.numero}
+                </div>
+                <div className="text-xs sm:text-sm text-slate-600 mb-2">
                   Cap: {mesa.capacidad}
                 </div>
                 <div
-                  className={`mt-1 sm:mt-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium border ${getEstadoColor(
-                    orden ? 'ocupada' : mesa.estado
-                  )}`}
+                  className={`mt-auto px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold border-2 ${getEstadoColor(estado)}`}
+                  role="status"
+                  aria-live="polite"
                 >
                   {orden ? 'Ocupada' : 'Libre'}
                 </div>
                 {orden && (
-                  <div className="mt-1 sm:mt-2 text-xs sm:text-sm font-semibold text-red-700">
+                  <div className="mt-2 text-sm sm:text-base font-bold text-red-700" aria-label={`Total: ${formatCLP(orden.total)}`}>
                     {formatCLP(orden.total)}
                   </div>
                 )}
@@ -257,23 +271,36 @@ function ParaLlevarModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
-        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Crear Orden Para Llevar</h2>
-        <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="parallevar-title"
+    >
+      <div 
+        className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="parallevar-title" className="text-xl sm:text-2xl font-bold mb-4 text-slate-900">
+          Crear Orden Para Llevar
+        </h2>
+        <p className="text-base sm:text-lg text-slate-600 mb-6">
           ¿Deseas crear una nueva orden para llevar?
         </p>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 text-sm sm:text-base"
+            aria-label="Cancelar creación de orden"
+            className="flex-1 min-h-[48px] px-6 py-3 border-2 border-slate-300 rounded-xl hover:bg-slate-50 active:bg-slate-100 text-base sm:text-lg font-semibold focus:outline-none focus:ring-4 focus:ring-slate-300 transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={handleCreateOrden}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 text-sm sm:text-base"
+            aria-label={loading ? 'Creando orden...' : 'Crear nueva orden para llevar'}
+            className="flex-1 min-h-[48px] px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 active:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-orange-300 transition-all"
           >
             {loading ? 'Creando...' : 'Crear Orden'}
           </button>
