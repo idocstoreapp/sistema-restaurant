@@ -58,18 +58,18 @@ export async function requireAuth(context: APIContext) {
     return errorResponse('Token inválido o expirado', 401);
   }
 
-  // Verificar que el usuario tenga rol de admin o encargado
+  // Verificar que el usuario tenga un rol válido
   const { data: userProfile } = await supabaseWithAuth
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  if (!userProfile || !['admin', 'encargado'].includes(userProfile.role)) {
+  if (!userProfile || !['admin', 'encargado', 'mesero'].includes(userProfile.role)) {
     return errorResponse('No tienes permisos para esta acción', 403);
   }
 
-  return { user, supabase: supabaseWithAuth };
+  return { user, supabase: supabaseWithAuth, userProfile };
 }
 
 // Helper para obtener usuario autenticado en páginas Astro
