@@ -314,8 +314,8 @@ const server = http.createServer(async (req, res) => {
   // Verificar token (opcional pero recomendado)
   const authHeader = req.headers.authorization;
   console.log('🔐 Verificando autenticación...');
-  console.log('🔐 Header recibido:', authHeader ? authHeader.substring(0, 20) + '...' : 'NO HAY HEADER');
-  console.log('🔐 Token esperado:', `Bearer ${API_TOKEN.substring(0, 10)}...`);
+  console.log('🔐 Header recibido:', authHeader ? authHeader.substring(0, 30) + '...' : 'NO HAY HEADER');
+  console.log('🔐 Token esperado (primeros 20 chars):', API_TOKEN.substring(0, 20));
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.error('❌ Token no proporcionado en header');
@@ -324,11 +324,16 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   
-  const token = authHeader.replace('Bearer ', '');
+  const token = authHeader.replace('Bearer ', '').trim();
+  console.log('🔐 Token recibido (primeros 20 chars):', token.substring(0, 20));
+  console.log('🔐 Tokens coinciden?', token === API_TOKEN);
+  
   if (token !== API_TOKEN) {
     console.error('❌ Token inválido');
-    console.error('❌ Token recibido:', token.substring(0, 10) + '...');
-    console.error('❌ Token esperado:', API_TOKEN.substring(0, 10) + '...');
+    console.error('❌ Token recibido (completo):', token);
+    console.error('❌ Token esperado (completo):', API_TOKEN);
+    console.error('❌ Longitud recibido:', token.length);
+    console.error('❌ Longitud esperado:', API_TOKEN.length);
     res.writeHead(401, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Token inválido' }));
     return;

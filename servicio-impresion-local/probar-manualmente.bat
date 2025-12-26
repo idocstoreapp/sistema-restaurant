@@ -38,12 +38,17 @@ if not exist .env (
     exit /b 1
 )
 
-for /f "tokens=2 delims==" %%a in ('findstr "PRINT_SERVICE_TOKEN" .env') do (
+echo Leyendo archivo .env...
+for /f "usebackq tokens=2 delims==" %%a in (`findstr /C:"PRINT_SERVICE_TOKEN=" .env`) do (
     set "token=%%a"
+    set "token=!token: =!"
 )
 
 if not defined token (
     echo ERROR: No se encontro el token en .env
+    echo.
+    echo Contenido del .env:
+    type .env
     pause
     exit /b 1
 )
