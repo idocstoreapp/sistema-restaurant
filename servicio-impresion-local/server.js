@@ -65,7 +65,48 @@ if (!dotenvLoaded) {
 }
 
 const http = require('http');
-const { Network, USB, Printer } = require('escpos');
+
+// Importar escpos - la estructura puede variar según la versión
+let escpos;
+let Network, USB, Printer;
+
+try {
+  escpos = require('escpos');
+  
+  // Intentar diferentes formas de importación según la versión
+  if (escpos.USB) {
+    // Versión donde USB está en el objeto principal
+    Network = escpos.Network;
+    USB = escpos.USB;
+    Printer = escpos.Printer;
+    console.log('✅ escpos importado correctamente (método 1)');
+  } else if (escpos.default && escpos.default.USB) {
+    // Versión con default export
+    Network = escpos.default.Network;
+    USB = escpos.default.USB;
+    Printer = escpos.default.Printer;
+    console.log('✅ escpos importado correctamente (método 2)');
+  } else {
+    // Intentar desestructuración directa
+    ({ Network, USB, Printer } = escpos);
+    console.log('✅ escpos importado correctamente (método 3)');
+  }
+  
+  // Verificar que las clases estén disponibles
+  if (!USB || typeof USB !== 'function') {
+    throw new Error('USB no está disponible o no es una función');
+  }
+  if (!Printer || typeof Printer !== 'function') {
+    throw new Error('Printer no está disponible o no es una función');
+  }
+  
+  console.log('✅ Clases USB y Printer verificadas correctamente');
+} catch (importError) {
+  console.error('❌ ERROR importando escpos:', importError.message);
+  console.error('❌ Stack:', importError.stack);
+  console.error('❌ Verifica que escpos esté instalado: npm install escpos');
+  process.exit(1);
+}
 
 // Configuración desde variables de entorno
 const PORT = process.env.PRINT_SERVICE_PORT || 3001;

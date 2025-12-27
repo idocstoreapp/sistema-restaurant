@@ -44,7 +44,26 @@ echo.
 REM Crear script de prueba
 echo [5] Creando script de prueba de conexion...
 (
-echo const { USB, Printer } = require^('escpos'^);
+echo const escpos = require^('escpos'^);
+echo let USB, Printer;
+echo.
+echo // Intentar diferentes formas de importacion
+echo if ^(escpos.USB^) {
+echo   USB = escpos.USB;
+echo   Printer = escpos.Printer;
+echo } else if ^(escpos.default && escpos.default.USB^) {
+echo   USB = escpos.default.USB;
+echo   Printer = escpos.default.Printer;
+echo } else {
+echo   ^({ USB, Printer } = escpos^);
+echo }
+echo.
+echo if ^(!USB || typeof USB !== 'function'^) {
+echo   console.error^('ERROR: USB no esta disponible'^);
+echo   console.error^('Verifica que escpos este instalado: npm install escpos'^);
+echo   process.exit^(1^);
+echo }
+echo.
 echo console.log^('========================================'^);
 echo console.log^('  PRUEBA DE CONEXION USB'^);
 echo console.log^('========================================'^);
