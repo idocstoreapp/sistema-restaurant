@@ -130,18 +130,67 @@ function connectPrinter(type, path, ip, port) {
       console.log(`🔌 Creando dispositivo USB: ${path}`);
       console.log(`🔌 NOTA: En Windows, el path puede ser USB002, COM3, o el nombre de la impresora`);
       
-      // Crear dispositivo USB - esto puede fallar si el dispositivo no existe
+      // Intentar múltiples métodos para conectar USB en Windows
+      let usbConnected = false;
+      const methodsToTry = [];
+      
+      // Método 1: Path directo (el configurado)
+      methodsToTry.push({ name: 'Path directo', path: path });
+      
+      // Método 2: Si es USB002, USB003, etc., intentar sin el prefijo
+      if (path.toUpperCase().startsWith('USB')) {
+        const numericPart = path.replace(/^USB/i, '');
+        methodsToTry.push({ name: 'Sin prefijo USB', path: numericPart });
+      }
+      
+      // Método 3: Intentar listar dispositivos USB disponibles
       try {
-        console.log(`🔌 Instanciando new USB("${path}")...`);
-        device = new USB(path);
-        console.log(`✅ Dispositivo USB creado exitosamente`);
-      } catch (usbError) {
-        console.error(`❌ ERROR al crear dispositivo USB:`);
-        console.error(`   - Mensaje: ${usbError.message}`);
-        console.error(`   - Tipo: ${usbError.name}`);
-        console.error(`   - Path intentado: "${path}"`);
-        console.error(`   - Stack: ${usbError.stack}`);
-        throw new Error(`No se pudo crear dispositivo USB con path "${path}": ${usbError.message}`);
+        console.log(`🔌 Intentando listar dispositivos USB disponibles...`);
+        const usbDevices = USB.findPrinter();
+        if (usbDevices && usbDevices.length > 0) {
+          console.log(`🔌 Se encontraron ${usbDevices.length} dispositivo(s) USB`);
+          usbDevices.forEach((dev, idx) => {
+            console.log(`   ${idx + 1}. ${JSON.stringify(dev)}`);
+            methodsToTry.push({ name: `Dispositivo USB #${idx + 1}`, path: dev });
+          });
+        } else {
+          console.log(`⚠️  No se encontraron dispositivos USB con findPrinter()`);
+        }
+      } catch (listError) {
+        console.warn(`⚠️  No se pudo listar dispositivos USB: ${listError.message}`);
+      }
+      
+      // Intentar cada método hasta que uno funcione
+      for (const method of methodsToTry) {
+        try {
+          console.log(`🔌 Intentando método: ${method.name} con path "${method.path}"...`);
+          device = new USB(method.path);
+          console.log(`✅ Dispositivo USB creado exitosamente con método: ${method.name}`);
+          usbConnected = true;
+          break;
+        } catch (methodError) {
+          console.warn(`⚠️  Método ${method.name} falló: ${methodError.message}`);
+          // Continuar con el siguiente método
+        }
+      }
+      
+      // Si ningún método funcionó, lanzar error
+      if (!usbConnected) {
+        console.error(`❌ ========== TODOS LOS MÉTODOS FALLARON ==========`);
+        console.error(`❌ Se intentaron ${methodsToTry.length} método(s) y ninguno funcionó`);
+        console.error(`❌ Path configurado: "${path}"`);
+        console.error(`❌ Posibles causas:`);
+        console.error(`   1. El puerto/path es incorrecto`);
+        console.error(`   2. La impresora no está conectada o encendida`);
+        console.error(`   3. El puerto está siendo usado por otro programa`);
+        console.error(`   4. Permisos insuficientes (ejecutar como Administrador)`);
+        console.error(`   5. El driver de la impresora no está instalado correctamente`);
+        console.error(`❌ Soluciones:`);
+        console.error(`   - Verifica el puerto en Panel de Control > Dispositivos e impresoras`);
+        console.error(`   - Si usas USB002, prueba con COM3, COM4, etc.`);
+        console.error(`   - Ejecuta el servicio como Administrador`);
+        console.error(`   - Verifica que la impresora esté encendida y conectada`);
+        throw new Error(`No se pudo conectar a la impresora USB después de intentar ${methodsToTry.length} método(s). Path configurado: "${path}"`);
       }
     } else {
       throw new Error(`Tipo de impresora no válido: ${type}. Use 'network' o 'usb'`);
