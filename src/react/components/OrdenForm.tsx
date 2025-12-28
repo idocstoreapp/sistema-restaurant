@@ -432,6 +432,19 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
       return;
     }
 
+    // Validar que el estado actual permita el cambio
+    if (!orden) {
+      alert('Error: No se pudo cargar la orden. Recarga la página.');
+      return;
+    }
+
+    console.log('[OrdenForm] ========== INICIANDO CAMBIO DE ESTADO ==========');
+    console.log('[OrdenForm] Estado actual:', orden.estado);
+    console.log('[OrdenForm] Estado nuevo:', nuevoEstado);
+    console.log('[OrdenForm] Orden ID:', ordenId);
+    console.log('[OrdenForm] Items en orden:', items.length);
+    console.log('[OrdenForm] Saving:', saving);
+
     try {
       setSaving(true);
       
@@ -441,7 +454,10 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
         const token = session?.access_token;
         
         if (token) {
+          console.log('[OrdenForm] ✅ Token de sesión encontrado');
           console.log('[OrdenForm] Llamando a API route para cambiar estado:', nuevoEstado);
+          console.log('[OrdenForm] URL:', `/api/ordenes/${ordenId}`);
+          
           const response = await fetch(`/api/ordenes/${ordenId}`, {
             method: 'PATCH',
             headers: {
@@ -451,39 +467,76 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
             body: JSON.stringify({ estado: nuevoEstado }),
           });
           
+          console.log('[OrdenForm] Respuesta recibida:', response.status, response.statusText);
+          
           if (response.ok) {
             const result = await response.json();
-            console.log('[OrdenForm] API route respondió correctamente:', result);
+            console.log('[OrdenForm] ✅ API route respondió correctamente:', result);
             // API route funcionó, recargar datos
             await loadData();
+            console.log('[OrdenForm] ✅ Datos recargados después de cambio de estado');
             return;
           } else {
             const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-            console.error('[OrdenForm] API route falló:', response.status, errorData);
+            console.error('[OrdenForm] ❌ API route falló:', response.status, errorData);
+            alert(`Error del servidor (${response.status}): ${errorData.error || errorData.message || 'Error desconocido'}`);
             // Continuar con fallback
           }
         } else {
-          console.warn('[OrdenForm] No hay token de sesión, usando método directo');
+          console.warn('[OrdenForm] ⚠️ No hay token de sesión, usando método directo');
         }
       } catch (apiError: any) {
         // Si la API falla, usar método directo como fallback
-        console.warn('[OrdenForm] API route no disponible, usando método directo:', apiError.message);
+        console.warn('[OrdenForm] ⚠️ API route no disponible, usando método directo:', apiError.message);
+        console.error('[OrdenForm] Error completo:', apiError);
       }
       
       // Fallback: actualizar directamente (método original)
       console.log('[OrdenForm] Usando método directo (fallback)');
-      const { error } = await supabase
+      console.log('[OrdenForm] Actualizando orden:', ordenId, 'a estado:', nuevoEstado);
+      
+      const { data, error } = await supabase
         .from('ordenes_restaurante')
         .update({ estado: nuevoEstado })
-        .eq('id', ordenId);
+        .eq('id', ordenId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[OrdenForm] ❌ Error de Supabase:', error);
+        console.error('[OrdenForm] Código:', error.code);
+        console.error('[OrdenForm] Mensaje:', error.message);
+        console.error('[OrdenForm] Detalles:', error.details);
+        console.error('[OrdenForm] Hint:', error.hint);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log('[OrdenForm] ✅ Estado actualizado correctamente:', data[0]);
+      } else {
+        console.warn('[OrdenForm] ⚠️ No se devolvieron datos después de actualizar');
+      }
+      
       await loadData();
+      console.log('[OrdenForm] ✅ Datos recargados después de cambio de estado (método directo)');
     } catch (error: any) {
-      console.error('[OrdenForm] Error actualizando estado:', error);
-      alert('Error actualizando estado: ' + error.message);
+      console.error('[OrdenForm] ❌ ========== ERROR ACTUALIZANDO ESTADO ==========');
+      console.error('[OrdenForm] Error completo:', error);
+      console.error('[OrdenForm] Tipo:', typeof error);
+      console.error('[OrdenForm] Stack:', error.stack);
+      
+      let errorMessage = 'Error desconocido';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.error) {
+        errorMessage = error.error;
+      }
+      
+      alert(`Error actualizando estado: ${errorMessage}\n\nRevisa la consola (F12) para más detalles.`);
     } finally {
       setSaving(false);
+      console.log('[OrdenForm] ========== FIN CAMBIO DE ESTADO ==========');
     }
   }
 
