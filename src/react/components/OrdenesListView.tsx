@@ -119,17 +119,25 @@ export default function OrdenesListView() {
 
       // Liberar la mesa si tenía una asignada
       if (mesaId) {
-        const { error: mesaError } = await supabase
+        console.log(`[eliminarOrden] Intentando liberar mesa ${mesaId}...`);
+        
+        const { data: mesaData, error: mesaError } = await supabase
           .from('mesas')
           .update({ estado: 'libre' })
-          .eq('id', mesaId);
+          .eq('id', mesaId)
+          .select()
+          .single();
 
         if (mesaError) {
           console.error('[eliminarOrden] Error liberando mesa:', mesaError);
-          // No lanzar error, solo loguearlo
+          console.error('[eliminarOrden] Detalles del error:', JSON.stringify(mesaError, null, 2));
+        } else if (mesaData) {
+          console.log(`[eliminarOrden] ✅ Mesa ${mesaId} (Mesa ${mesaData.numero}) liberada correctamente. Estado actual: ${mesaData.estado}`);
         } else {
-          console.log(`[eliminarOrden] Mesa ${mesaId} liberada correctamente`);
+          console.warn(`[eliminarOrden] ⚠️ Mesa ${mesaId} no se encontró o no se actualizó`);
         }
+      } else {
+        console.log('[eliminarOrden] Orden sin mesa asignada, no se necesita liberar');
       }
 
       loadOrdenes();

@@ -419,18 +419,26 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
 
       // Liberar la mesa DESPUÉS de eliminar la orden (para evitar conflictos)
       if (mesaId) {
-        const { error: mesaError } = await supabase
+        console.log(`[cancelarOrden] Intentando liberar mesa ${mesaId}...`);
+        
+        const { data: mesaData, error: mesaError } = await supabase
           .from('mesas')
           .update({ estado: 'libre' })
-          .eq('id', mesaId);
+          .eq('id', mesaId)
+          .select()
+          .single();
 
         if (mesaError) {
           console.error('[cancelarOrden] Error liberando mesa:', mesaError);
-          // No lanzar error aquí, solo loguearlo, porque la orden ya fue eliminada
-          alert('⚠️ Orden cancelada, pero hubo un problema al liberar la mesa. Por favor, libérala manualmente.');
+          console.error('[cancelarOrden] Detalles del error:', JSON.stringify(mesaError, null, 2));
+          alert(`⚠️ Orden cancelada, pero hubo un problema al liberar la mesa: ${mesaError.message}. Por favor, libérala manualmente.`);
+        } else if (mesaData) {
+          console.log(`[cancelarOrden] ✅ Mesa ${mesaId} (Mesa ${mesaData.numero}) liberada correctamente. Estado actual: ${mesaData.estado}`);
         } else {
-          console.log(`[cancelarOrden] Mesa ${mesaId} liberada correctamente`);
+          console.warn(`[cancelarOrden] ⚠️ Mesa ${mesaId} no se encontró o no se actualizó`);
         }
+      } else {
+        console.log('[cancelarOrden] Orden sin mesa asignada, no se necesita liberar');
       }
 
       // Redirigir a mesas
