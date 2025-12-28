@@ -31,9 +31,10 @@ interface ComandaCocinaProps {
   orden: Orden;
   items: OrdenItem[];
   onClose?: () => void;
+  onEnviarACocina?: () => void;
 }
 
-export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaProps) {
+export default function ComandaCocina({ orden, items, onClose, onEnviarACocina }: ComandaCocinaProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -89,12 +90,20 @@ export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaPr
   return (
     <>
       {/* Botones de control - solo visible en pantalla */}
-      <div className="no-print p-4 bg-slate-100 flex gap-3">
+      <div className="no-print p-4 bg-slate-100 flex flex-wrap gap-3">
+        {onEnviarACocina && (
+          <button
+            onClick={onEnviarACocina}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex-1 min-w-[150px]"
+          >
+            🍳 Enviar a Cocina
+          </button>
+        )}
         <button
           onClick={handlePrint}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          🖨️ Imprimir Comanda
+          🖨️ Imprimir Vista Previa
         </button>
         {onClose && (
           <button
