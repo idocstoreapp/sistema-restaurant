@@ -291,7 +291,9 @@ function formatPersonalization(notas) {
 }
 
 async function printKitchenCommand(data) {
-  const { orden, items } = data;
+  // Aceptar tanto { orden, items } como { orden: {...}, items: [...] }
+  const orden = data.orden || data;
+  const items = data.items || [];
   
   if (!PRINTER_KITCHEN_NAME) {
     throw new Error('PRINTER_KITCHEN_NAME no configurado en .env');
@@ -379,7 +381,9 @@ async function printKitchenCommand(data) {
 }
 
 async function printCustomerReceipt(data) {
-  const { orden, items } = data;
+  // Aceptar tanto { orden, items } como { orden: {...}, items: [...] }
+  const orden = data.orden || data;
+  const items = data.items || [];
   
   if (!PRINTER_CASHIER_NAME) {
     throw new Error('PRINTER_CASHIER_NAME no configurado en .env');
