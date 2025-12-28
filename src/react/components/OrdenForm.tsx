@@ -671,19 +671,6 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
         }
       }
 
-      // Imprimir boleta automáticamente al pagar
-      try {
-        const { printCustomerReceipt } = await import('@/lib/printer-service');
-        await printCustomerReceipt(
-          { ...orden, mesas: mesaInfo || undefined, metodo_pago: metodoPagoBD, paid_at: new Date().toISOString() },
-          items
-        );
-        console.log('[confirmarPago] Boleta enviada a impresora automáticamente');
-      } catch (printError: any) {
-        console.error('[confirmarPago] Error imprimiendo boleta automáticamente:', printError);
-        // No bloquear el pago si falla la impresión
-      }
-
       // Liberar mesa
       if (orden?.mesa_id) {
         await supabase
@@ -693,6 +680,36 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
       }
 
       setShowPagoModal(false);
+      
+      // Imprimir boleta automáticamente al pagar
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        if (token) {
+          const printResponse = await fetch('/api/print', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              type: 'receipt',
+              ordenId: ordenId,
+            }),
+          });
+          
+          if (printResponse.ok) {
+            console.log('[OrdenForm] ✅ Boleta impresa automáticamente al pagar');
+          } else {
+            console.warn('[OrdenForm] ⚠️ No se pudo imprimir boleta automáticamente, pero el pago fue exitoso');
+          }
+        }
+      } catch (printError) {
+        console.error('[OrdenForm] Error imprimiendo boleta automáticamente:', printError);
+        // No bloquear el flujo si falla la impresión
+      }
+      
       // Mostrar boleta antes de redirigir
       setShowBoleta(true);
     } catch (error: any) {
@@ -1298,27 +1315,6 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
               orden={{ ...orden, mesas: mesaInfo || undefined }}
               items={items}
               onClose={() => setShowComanda(false)}
-              onEnviarACocina={async () => {
-                try {
-                  const { printKitchenCommand } = await import('@/lib/printer-service');
-                  const success = await printKitchenCommand(
-                    { ...orden, mesas: mesaInfo || undefined },
-                    items
-                  );
-                  if (success) {
-                    alert('✅ Comanda enviada a cocina correctamente');
-                    // Cambiar estado a preparing si no lo está
-                    if (orden.estado !== 'preparing') {
-                      await updateEstado('preparing');
-                    }
-                  } else {
-                    alert('⚠️ La comanda se envió pero puede haber un problema con la impresora. Verifica los logs.');
-                  }
-                } catch (error: any) {
-                  console.error('Error enviando comanda a cocina:', error);
-                  alert('❌ Error enviando comanda: ' + error.message);
-                }
-              }}
             />
           </div>
         </div>
@@ -1343,23 +1339,6 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
                   setTimeout(() => {
                     window.location.href = '/admin/mesas';
                   }, 1000);
-                }
-              }}
-              onImprimirBoleta={async () => {
-                try {
-                  const { printCustomerReceipt } = await import('@/lib/printer-service');
-                  const success = await printCustomerReceipt(
-                    { ...orden, mesas: mesaInfo || undefined },
-                    items
-                  );
-                  if (success) {
-                    alert('✅ Boleta enviada a impresora correctamente');
-                  } else {
-                    alert('⚠️ La boleta se envió pero puede haber un problema con la impresora. Verifica los logs.');
-                  }
-                } catch (error: any) {
-                  console.error('Error imprimiendo boleta:', error);
-                  alert('❌ Error imprimiendo boleta: ' + error.message);
                 }
               }}
             />

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface OrdenItem {
   id?: string;
@@ -31,11 +32,51 @@ interface ComandaCocinaProps {
   orden: Orden;
   items: OrdenItem[];
   onClose?: () => void;
-  onEnviarACocina?: () => void;
 }
 
-export default function ComandaCocina({ orden, items, onClose, onEnviarACocina }: ComandaCocinaProps) {
+export default function ComandaCocina({ orden, items, onClose }: ComandaCocinaProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [printing, setPrinting] = useState(false);
+
+  const handleSendToKitchen = async () => {
+    if (printing || !orden?.id) return;
+    
+    setPrinting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        alert('No estás autenticado. Por favor, inicia sesión nuevamente.');
+        return;
+      }
+      
+      const response = await fetch('/api/print', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: 'kitchen',
+          ordenId: orden.id,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        alert('✅ Comanda enviada a la impresora de cocina');
+      } else {
+        alert(`❌ Error: ${result.error || 'No se pudo enviar la comanda'}`);
+      }
+    } catch (error: any) {
+      console.error('Error enviando comanda:', error);
+      alert(`❌ Error al enviar comanda: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -90,20 +131,19 @@ export default function ComandaCocina({ orden, items, onClose, onEnviarACocina }
   return (
     <>
       {/* Botones de control - solo visible en pantalla */}
-      <div className="no-print p-4 bg-slate-100 flex flex-wrap gap-3">
-        {onEnviarACocina && (
-          <button
-            onClick={onEnviarACocina}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex-1 min-w-[150px]"
-          >
-            🍳 Enviar a Cocina
-          </button>
-        )}
+      <div className="no-print p-4 bg-slate-100 flex gap-3">
         <button
           onClick={handlePrint}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          🖨️ Imprimir Vista Previa
+          🖨️ Vista Previa
+        </button>
+        <button
+          onClick={handleSendToKitchen}
+          disabled={printing}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {printing ? '⏳ Enviando...' : '📤 Enviar a Cocina'}
         </button>
         {onClose && (
           <button
