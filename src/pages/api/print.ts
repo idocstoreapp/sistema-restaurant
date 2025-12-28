@@ -11,6 +11,7 @@
 
 import type { APIRoute } from 'astro';
 import { requireAuth, jsonResponse, errorResponse } from '../../lib/api-helpers';
+import { printKitchenCommand, printCustomerReceipt } from '../../lib/printer-service';
 
 export const POST: APIRoute = async (context) => {
   try {
@@ -66,87 +67,35 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('La orden no tiene items para imprimir', 400);
     }
     
-    // IMPORTANTE: No podemos hacer fetch desde HTTPS a HTTP (Mixed Content)
-    // La solución es que la API route en Vercel haga el fetch al servicio local
-    // usando las variables de entorno del servidor (no públicas)
-    const printServiceUrl = import.meta.env.PRINT_SERVICE_URL || 'http://localhost:3001';
-    const printServiceToken = import.meta.env.PRINT_SERVICE_TOKEN || '';
-    
-    if (!printServiceUrl || !printServiceToken) {
-      console.error('[API Print] ❌ Servicio de impresión local NO configurado');
-      console.error('[API Print] PRINT_SERVICE_URL:', printServiceUrl || 'FALTANTE');
-      console.error('[API Print] PRINT_SERVICE_TOKEN:', printServiceToken ? 'presente' : 'FALTANTE');
-      return errorResponse(
-        'Servicio de impresión local no configurado. Verifica las variables de entorno PRINT_SERVICE_URL y PRINT_SERVICE_TOKEN en Vercel.',
-        500
-      );
-    }
-    
-    // Asegurar que la URL tenga el puerto si no lo tiene
-    let url = printServiceUrl.endsWith('/') ? printServiceUrl.slice(0, -1) : printServiceUrl;
-    if (!url.includes(':') || (!url.includes(':3001') && !url.includes(':80') && !url.includes(':443'))) {
-      // Si no tiene puerto, agregar 3001
-      url = url.replace(/\/$/, '') + ':3001';
-    }
-    
+    // Usar las mismas funciones que cuando cambia el estado
+    // Esto garantiza que funcione exactamente igual
+    let printResult = false;
     try {
-      console.log('[API Print] Enviando a servicio local:', url);
-      console.log('[API Print] Tipo:', type);
-      console.log('[API Print] Orden:', orden.numero_orden);
+      if (type === 'kitchen') {
+        console.log('[API Print] Imprimiendo comanda de cocina para orden:', orden.numero_orden);
+        printResult = await printKitchenCommand(orden, items);
+      } else if (type === 'receipt') {
+        console.log('[API Print] Imprimiendo boleta de cliente para orden:', orden.numero_orden);
+        printResult = await printCustomerReceipt(orden, items);
+      }
       
-      // Hacer fetch desde el servidor de Vercel (no desde el navegador)
-      // Esto evita problemas de Mixed Content
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${printServiceToken}`,
-        },
-        body: JSON.stringify({
-          type: type === 'kitchen' ? 'kitchen' : 'receipt',
-          orden,
-          items,
-        }),
-        // Timeout más largo para conexiones locales
-        signal: AbortSignal.timeout(10000), // 10 segundos
-      });
-      
-      console.log('[API Print] Respuesta del servicio local:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        console.error('[API Print] ❌ Error del servicio local:', error);
+      if (printResult) {
+        return jsonResponse({
+          success: true,
+          message: type === 'kitchen' ? 'Comanda enviada a impresora' : 'Boleta enviada a impresora',
+          type,
+          orden: orden.numero_orden
+        });
+      } else {
         return errorResponse(
-          `Error del servicio de impresión: ${error.error || `HTTP ${response.status}`}`,
+          `Error al imprimir ${type === 'kitchen' ? 'comanda' : 'boleta'}. Verifica la configuración de la impresora.`,
           500
         );
       }
-      
-      const result = await response.json();
-      console.log(`[API Print] ✅ ${type === 'kitchen' ? 'Comanda' : 'Boleta'} enviada a servicio local:`, result.message);
-      
-      return jsonResponse({
-        success: true,
-        message: type === 'kitchen' ? 'Comanda enviada a impresora' : 'Boleta enviada a impresora',
-        type,
-        orden: orden.numero_orden
-      });
     } catch (error: any) {
-      console.error(`[API Print] ❌ Error enviando a servicio local:`, error.message);
-      console.error('[API Print] Stack:', error.stack);
-      
-      // Mensaje más descriptivo según el tipo de error
-      let errorMessage = 'Error desconocido';
-      if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
-        errorMessage = 'No se pudo conectar al servicio de impresión. Verifica que el servicio esté corriendo en la PC local y que la IP en PRINT_SERVICE_URL sea correcta.';
-      } else if (error.message.includes('timeout')) {
-        errorMessage = 'El servicio de impresión no respondió a tiempo. Verifica que esté corriendo.';
-      } else {
-        errorMessage = error.message || 'Error desconocido';
-      }
-      
+      console.error(`[API Print] ❌ Error imprimiendo:`, error.message);
       return errorResponse(
-        `Error de conexión con el servicio de impresión: ${errorMessage}`,
+        `Error al imprimir: ${error.message || 'Error desconocido'}`,
         500
       );
     }
