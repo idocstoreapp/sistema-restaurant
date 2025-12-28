@@ -66,70 +66,32 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('La orden no tiene items para imprimir', 400);
     }
     
-    // Enviar al servicio local de impresión (siempre desde Vercel)
-    const printServiceUrl = import.meta.env.PRINT_SERVICE_URL || 'http://localhost:3001';
-    const printServiceToken = import.meta.env.PRINT_SERVICE_TOKEN || '';
+    // Retornar la URL y token para que el frontend haga el fetch directamente
+    // Esto evita problemas de CORS y permite que el navegador (que está en la misma red)
+    // se conecte directamente al servicio local
+    const printServiceUrl = import.meta.env.PUBLIC_PRINT_SERVICE_URL || import.meta.env.PRINT_SERVICE_URL || 'http://localhost:3001';
+    const printServiceToken = import.meta.env.PUBLIC_PRINT_SERVICE_TOKEN || import.meta.env.PRINT_SERVICE_TOKEN || '';
     
     if (!printServiceUrl || !printServiceToken) {
       console.error('[API Print] ❌ Servicio de impresión local NO configurado');
       console.error('[API Print] PRINT_SERVICE_URL:', printServiceUrl || 'FALTANTE');
       console.error('[API Print] PRINT_SERVICE_TOKEN:', printServiceToken ? 'presente' : 'FALTANTE');
       return errorResponse(
-        'Servicio de impresión local no configurado. Verifica las variables de entorno PRINT_SERVICE_URL y PRINT_SERVICE_TOKEN en Vercel.',
+        'Servicio de impresión local no configurado. Verifica las variables de entorno PUBLIC_PRINT_SERVICE_URL y PUBLIC_PRINT_SERVICE_TOKEN en Vercel.',
         500
       );
     }
     
-    try {
-      // El servicio local espera /print/kitchen o /print/receipt
-      const endpoint = type === 'kitchen' ? '/print/kitchen' : '/print/receipt';
-      const baseUrl = printServiceUrl.endsWith('/') ? printServiceUrl.slice(0, -1) : printServiceUrl;
-      const url = `${baseUrl}${endpoint}`;
-      
-      console.log('[API Print] Enviando a servicio local:', url);
-      console.log('[API Print] Tipo:', type);
-      console.log('[API Print] Orden:', orden.numero_orden);
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orden,
-          items,
-          token: printServiceToken, // El servicio local espera el token en el body
-        }),
-      });
-      
-      console.log('[API Print] Respuesta del servicio local:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        console.error('[API Print] ❌ Error del servicio local:', error);
-        return errorResponse(
-          `Error del servicio de impresión: ${error.error || `HTTP ${response.status}`}`,
-          500
-        );
-      }
-      
-      const result = await response.json();
-      console.log(`[API Print] ✅ ${type === 'kitchen' ? 'Comanda' : 'Boleta'} enviada a servicio local:`, result.message);
-      
-      return jsonResponse({
-        success: true,
-        message: type === 'kitchen' ? 'Comanda enviada a impresora' : 'Boleta enviada a impresora',
-        type,
-        orden: orden.numero_orden
-      });
-    } catch (error: any) {
-      console.error(`[API Print] ❌ Error enviando a servicio local:`, error.message);
-      console.error('[API Print] Stack:', error.stack);
-      return errorResponse(
-        `Error de conexión con el servicio de impresión: ${error.message || 'Error desconocido'}`,
-        500
-      );
-    }
+    // Retornar los datos para que el frontend haga el fetch
+    return jsonResponse({
+      success: true,
+      printServiceUrl: printServiceUrl.endsWith('/') ? printServiceUrl.slice(0, -1) : printServiceUrl,
+      printServiceToken,
+      type: type === 'kitchen' ? 'kitchen' : 'receipt',
+      orden,
+      items,
+      message: 'Datos listos para impresión'
+    });
   } catch (error: any) {
     if (error instanceof Response) return error;
     console.error('Error en POST /api/print:', error);

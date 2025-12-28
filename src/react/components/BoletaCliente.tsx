@@ -52,7 +52,8 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
         return;
       }
       
-      const response = await fetch('/api/print', {
+      // Paso 1: Obtener datos de la API
+      const apiResponse = await fetch('/api/print', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,12 +65,33 @@ export default function BoletaCliente({ orden, items, onClose }: BoletaClientePr
         }),
       });
       
-      const result = await response.json();
+      const apiResult = await apiResponse.json();
       
-      if (response.ok && result.success) {
+      if (!apiResponse.ok || !apiResult.success) {
+        alert(`❌ Error: ${apiResult.error || 'No se pudo obtener datos de impresión'}`);
+        return;
+      }
+      
+      // Paso 2: Enviar directamente al servicio local desde el navegador
+      const printResponse = await fetch(apiResult.printServiceUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiResult.printServiceToken}`,
+        },
+        body: JSON.stringify({
+          type: apiResult.type,
+          orden: apiResult.orden,
+          items: apiResult.items,
+        }),
+      });
+      
+      const printResult = await printResponse.json();
+      
+      if (printResponse.ok && printResult.success) {
         alert('✅ Boleta enviada a la impresora');
       } else {
-        alert(`❌ Error: ${result.error || 'No se pudo enviar la boleta'}`);
+        alert(`❌ Error: ${printResult.error || 'No se pudo enviar la boleta al servicio local'}`);
       }
     } catch (error: any) {
       console.error('Error enviando boleta:', error);
