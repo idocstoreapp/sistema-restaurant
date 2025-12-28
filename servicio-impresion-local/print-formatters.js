@@ -158,9 +158,9 @@ function formatReceiptItems(formatter, items) {
 }
 
 /**
- * Formatea totales de boleta
+ * Formatea totales de boleta (incluye propina del 10%)
  */
-function formatReceiptTotals(formatter, items) {
+function formatReceiptTotals(formatter, items, orden) {
   // Calcular desglose IVA
   const calcularDesgloseIVA = (precioConIVA) => {
     const precioSinIVA = precioConIVA / 1.19;
@@ -178,7 +178,11 @@ function formatReceiptTotals(formatter, items) {
     return sum + desglose.iva;
   }, 0);
   
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+  // Calcular total de la orden
+  const total = orden.total || items.reduce((sum, item) => sum + item.subtotal, 0);
+  
+  // Calcular propina (10% del total)
+  const propina = orden.propina_calculada || (total * 0.1);
   
   formatter
     .separator('-', WIDTH)
@@ -188,7 +192,16 @@ function formatReceiptTotals(formatter, items) {
     .separator('-', WIDTH)
     .boldOn()
     .textFixedWidth(`TOTAL:          ${formatPrice(total)}`, WIDTH, 'left')
-    .boldOff();
+    .boldOff()
+    .separator('-', WIDTH)
+    .alignCenter()
+    .sizeDouble()
+    .boldOn()
+    .textLine('PROPINA 10%')
+    .textLine(formatPrice(propina))
+    .boldOff()
+    .sizeNormal()
+    .separator('-', WIDTH);
 }
 
 /**
@@ -227,13 +240,30 @@ function formatReceiptFooter(formatter) {
 /**
  * Formatea el pie de página de comanda
  */
-function formatKitchenFooter(formatter, items) {
+function formatKitchenFooter(formatter, items, orden) {
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
+  
+  // Calcular total de la orden
+  const totalOrden = orden.total || items.reduce((sum, item) => sum + item.subtotal, 0);
+  
+  // Calcular propina (10% del total)
+  const propina = totalOrden * 0.1;
   
   formatter
     .separator('-', WIDTH)
-    .alignCenter()
+    .alignLeft()
     .textLine(`Total Items: ${totalItems}`)
+    .textLine(`Subtotal: ${formatPrice(totalOrden)}`)
+    .separator('-', WIDTH)
+    .alignCenter()
+    .sizeDouble()
+    .boldOn()
+    .textLine('PROPINA 10%')
+    .textLine(formatPrice(propina))
+    .boldOff()
+    .sizeNormal()
+    .separator('-', WIDTH)
+    .alignCenter()
     .textLine(new Date().toLocaleString('es-CL'))
     .feed(2)
     .cut();

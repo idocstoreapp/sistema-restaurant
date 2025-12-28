@@ -309,8 +309,8 @@ async function printKitchenCommand(data) {
     // Nota general
     formatGeneralNote(formatter, orden.nota);
     
-    // Pie
-    formatKitchenFooter(formatter, items);
+    // Pie (con propina destacada)
+    formatKitchenFooter(formatter, items, orden);
     
     // Imprimir
     const printData = formatter.getBuffer();
@@ -357,8 +357,8 @@ async function printCustomerReceipt(data) {
     // Items con precios
     formatReceiptItems(formatter, items);
     
-    // Totales
-    formatReceiptTotals(formatter, items);
+    // Totales (con propina destacada)
+    formatReceiptTotals(formatter, items, orden);
     
     // Información de pago
     formatPaymentInfo(formatter, orden);
@@ -506,10 +506,10 @@ async function pollForPendingOrders() {
           
           console.log(`🖨️  Procesando print_job ${job.id} (tipo: ${job.type}, impresora: ${job.printer_target})`);
           
-          // Obtener orden e items
+          // Obtener orden e items (incluir total para calcular propina)
           const { data: orden, error: ordenError } = await supabase
             .from('ordenes_restaurante')
-            .select('id, numero_orden, estado, created_at, nota, metodo_pago, paid_at, mesa_id')
+            .select('id, numero_orden, estado, created_at, nota, metodo_pago, paid_at, mesa_id, total, propina_calculada')
             .eq('id', job.orden_id)
             .single();
           
@@ -529,7 +529,7 @@ async function pollForPendingOrders() {
             continue;
           }
           
-          // Preparar datos de orden
+          // Preparar datos de orden (incluir total para propina)
           const ordenData = {
             id: orden.id,
             numero_orden: orden.numero_orden,
@@ -537,6 +537,8 @@ async function pollForPendingOrders() {
             nota: orden.nota,
             metodo_pago: orden.metodo_pago,
             paid_at: orden.paid_at,
+            total: orden.total || items.reduce((sum, item) => sum + item.subtotal, 0),
+            propina_calculada: orden.propina_calculada,
             mesas: mesa
           };
           
