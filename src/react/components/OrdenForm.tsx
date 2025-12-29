@@ -133,39 +133,55 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
         })) || []
       );
 
-      // Cargar categorías (sin image_url ya que no existe en la tabla)
+      // Cargar items del menú primero (necesario para filtrar categorías)
+      const { data: menuData, error: menuError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('name');
+
+      if (menuData) setMenuItems(menuData);
+
+      // Cargar categorías - mostrar todas las que tienen items disponibles
       let catsData = null;
       let catsError = null;
       
-      // Intentar primero con order_num
-      let query = supabase
-        .from('categories')
-        .select('id, name, slug')
-        .eq('is_active', true);
-      
       try {
-        // Intentar ordenar por order_num
-        const result = await query.order('order_num', { ascending: true });
-        catsData = result.data;
-        catsError = result.error;
-      } catch (err: any) {
-        console.warn('Error con order_num, intentando sin orden:', err);
-        // Si falla, intentar sin order_num
-        try {
-          const result2 = await supabase
-            .from('categories')
-            .select('id, name, slug')
-            .eq('is_active', true);
-          catsData = result2.data;
-          catsError = result2.error;
-        } catch (err2: any) {
-          console.warn('Error con is_active, intentando sin filtro:', err2);
-          // Si falla, intentar sin filtro is_active
-          const result3 = await supabase
+        // Primero cargar todas las categorías (sin filtro is_active para mostrar todas)
+        const { data: allCats, error: allCatsError } = await supabase
+          .from('categories')
+          .select('id, name, slug, order_num')
+          .order('order_num', { ascending: true });
+        
+        if (allCatsError) {
+          console.warn('Error cargando todas las categorías, intentando sin order_num:', allCatsError);
+          // Si falla con order_num, intentar sin ordenar
+          const { data: allCats2, error: allCatsError2 } = await supabase
             .from('categories')
             .select('id, name, slug');
-          catsData = result3.data;
-          catsError = result3.error;
+          
+          if (allCatsError2) {
+            catsError = allCatsError2;
+          } else {
+            catsData = allCats2;
+          }
+        } else {
+          catsData = allCats;
+        }
+      } catch (err: any) {
+        console.warn('Error cargando categorías:', err);
+        // Intentar consulta simple como último recurso
+        try {
+          const { data: simpleCats, error: simpleError } = await supabase
+            .from('categories')
+            .select('id, name, slug');
+          if (!simpleError) {
+            catsData = simpleCats;
+          } else {
+            catsError = simpleError;
+          }
+        } catch (err2: any) {
+          catsError = err2;
         }
       }
 
@@ -182,31 +198,27 @@ export default function OrdenForm({ ordenId }: OrdenFormProps) {
       } else {
         console.log('Categorías cargadas:', catsData);
         if (catsData && catsData.length > 0) {
-          setCategories(catsData);
-        } else {
-          console.warn('No se encontraron categorías activas');
-          // Intentar cargar todas las categorías sin filtro
-          const { data: allCats, error: allCatsError } = await supabase
-            .from('categories')
-            .select('id, name, slug');
+          // Filtrar solo las categorías que tienen items disponibles
+          const menuItemsData = menuData || [];
+          const categoriesWithItems = catsData.filter(cat => {
+            const itemsInCategory = menuItemsData.filter((item: MenuItem) => item.category_id === cat.id && item.is_available);
+            return itemsInCategory.length > 0;
+          });
           
-          if (!allCatsError && allCats && allCats.length > 0) {
-            console.log('Categorías cargadas (sin filtro is_active):', allCats);
-            setCategories(allCats);
+          console.log('Categorías con items disponibles:', categoriesWithItems);
+          console.log('Items del menú cargados:', menuItemsData.length);
+          
+          if (categoriesWithItems.length > 0) {
+            setCategories(categoriesWithItems);
           } else {
-            console.error('No se pudieron cargar categorías:', allCatsError);
+            // Si no hay categorías con items, mostrar todas (por si acaso)
+            console.warn('No se encontraron categorías con items, mostrando todas');
+            setCategories(catsData);
           }
+        } else {
+          console.warn('No se encontraron categorías');
         }
       }
-
-      // Cargar items del menú con categorías
-      const { data: menuData, error: menuError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('is_available', true)
-        .order('name');
-
-      if (menuData) setMenuItems(menuData);
     } catch (error: any) {
       console.error('Error cargando datos:', error);
       alert('Error cargando orden: ' + (error.message || 'Error desconocido'));
