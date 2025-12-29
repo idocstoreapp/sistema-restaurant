@@ -18,15 +18,31 @@ let heroImages: string[] = [];
 
 if (isConfigured && supabaseUrl !== 'https://placeholder.supabase.co') {
   try {
-    // Obtener TODAS las categorías activas
-    const { data: cats, error: catsError } = await supabase
+    // Primero cargar items del menú para filtrar categorías
+    const { data: menuItemsData, error: menuItemsError } = await supabase
+      .from('menu_items')
+      .select('id, category_id, is_available')
+      .eq('is_available', true);
+
+    // Obtener TODAS las categorías (sin filtrar por is_active)
+    const { data: allCats, error: catsError } = await supabase
       .from('categories')
       .select('*')
-      .eq('is_active', true)
       .order('order_num', { ascending: true });
 
-    if (!catsError && cats) {
-      activeCategories = cats || [];
+    if (!catsError && allCats) {
+      // Filtrar solo las categorías que tienen items disponibles
+      if (menuItemsData && menuItemsData.length > 0) {
+        const categoryIdsWithItems = new Set(
+          menuItemsData.map((item: any) => item.category_id).filter(Boolean)
+        );
+        activeCategories = allCats.filter((cat: any) => 
+          categoryIdsWithItems.has(cat.id)
+        );
+      } else {
+        // Si no hay items, mostrar todas las categorías
+        activeCategories = allCats;
+      }
     }
     
     // Obtener items destacados

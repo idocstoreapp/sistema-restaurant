@@ -19,12 +19,11 @@ let heroImages: string[] = [];
 
 if (isConfigured) {
   try {
-    // Obtener la categoría por slug
+    // Obtener la categoría por slug (sin filtrar por is_active para mostrar todas)
     const { data: cat, error: catError } = await supabase
       .from('categories')
       .select('*')
       .eq('slug', categorySlug)
-      .eq('is_active', true)
       .single();
 
     if (catError || !cat) {
@@ -58,15 +57,30 @@ if (isConfigured) {
       heroImages = itemsWithImages;
     }
 
-    // Obtener todas las categorías para navegación
-    const { data: cats, error: catsError } = await supabase
+    // Obtener todas las categorías para navegación (que tengan items disponibles)
+    const { data: menuItemsForNav, error: menuItemsNavError } = await supabase
+      .from('menu_items')
+      .select('category_id')
+      .eq('is_available', true);
+
+    const { data: allCats, error: catsError } = await supabase
       .from('categories')
       .select('*')
-      .eq('is_active', true)
       .order('order_num', { ascending: true });
 
-    if (!catsError && cats) {
-      allCategories = cats;
+    if (!catsError && allCats) {
+      // Filtrar solo las categorías que tienen items disponibles
+      if (menuItemsForNav && menuItemsForNav.length > 0) {
+        const categoryIdsWithItems = new Set(
+          menuItemsForNav.map((item: any) => item.category_id).filter(Boolean)
+        );
+        allCategories = allCats.filter((cat: any) => 
+          categoryIdsWithItems.has(cat.id)
+        );
+      } else {
+        // Si no hay items, mostrar todas las categorías
+        allCategories = allCats;
+      }
     }
   } catch (error: any) {
     console.error('Error cargando datos:', error?.message || error);
